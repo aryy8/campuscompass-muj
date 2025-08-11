@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ZoomIn, ZoomOut, Layers, Navigation, MapPin, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { campusLocations, categoryColors } from '@/lib/campus-data';
+import { buildGraphFromCoordinates, dijkstra } from '@/lib/shortest-path';
 
-interface MapLocation {
+export interface MapLocation {
   id: string;
   name: string;
   category: string;
@@ -16,39 +18,33 @@ interface InteractiveMapProps {
   selectedLocation?: string;
   onLocationSelect?: (location: MapLocation) => void;
   filteredCategories?: string[];
+  startLocationId?: string;
+  endLocationId?: string;
 }
 
-const mockLocations: MapLocation[] = [
-  { id: '1', name: 'Academic Block 1', category: 'academic', coordinates: { x: 25, y: 30 }, status: 'open' },
-  { id: '2', name: 'Central Library', category: 'academic', coordinates: { x: 45, y: 35 }, status: 'open' },
-  { id: '3', name: 'Food Court', category: 'dining', coordinates: { x: 35, y: 50 }, status: 'open' },
-  { id: '4', name: 'Hostel A', category: 'hostels', coordinates: { x: 20, y: 70 }, status: 'open' },
-  { id: '5', name: 'Hostel B', category: 'hostels', coordinates: { x: 15, y: 75 }, status: 'open' },
-  { id: '6', name: 'Sports Complex', category: 'recreation', coordinates: { x: 70, y: 25 }, status: 'open' },
-  { id: '7', name: 'Medical Center', category: 'medical', coordinates: { x: 60, y: 40 }, status: 'open' },
-  { id: '8', name: 'Admin Office', category: 'admin', coordinates: { x: 50, y: 20 }, status: 'open' },
-  { id: '9', name: 'Canteen', category: 'dining', coordinates: { x: 30, y: 60 }, status: 'open' },
-  { id: '10', name: 'Gym', category: 'recreation', coordinates: { x: 75, y: 30 }, status: 'maintenance' },
-];
+const mockLocations: MapLocation[] = campusLocations;
 
 const InteractiveMap: React.FC<InteractiveMapProps> = ({ 
   selectedLocation, 
   onLocationSelect, 
-  filteredCategories = [] 
+  filteredCategories = [],
+  startLocationId,
+  endLocationId,
 }) => {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [mapView, setMapView] = useState<'campus' | 'satellite'>('campus');
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
 
-  const categoryColors = {
-    academic: 'hsl(var(--academic))',
-    dining: 'hsl(var(--dining))',
-    hostels: 'hsl(var(--hostels))',
-    recreation: 'hsl(var(--recreation))',
-    admin: 'hsl(var(--admin))',
-    medical: 'hsl(var(--medical))',
-  };
+  const graph = useMemo(() => {
+    return buildGraphFromCoordinates(mockLocations);
+  }, []);
+
+  const shortestPath = useMemo(() => {
+    if (!startLocationId || !endLocationId) return [] as string[];
+    if (startLocationId === endLocationId) return [startLocationId];
+    return dijkstra(graph, startLocationId, endLocationId);
+  }, [graph, startLocationId, endLocationId]);
 
   const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.2, 2));
   const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.2, 0.5));
@@ -205,12 +201,31 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
               fill="none"
               opacity="0.6"
             />
+            {/* Route Path (if any) */}
+            {shortestPath.length > 1 && (
+              <polyline
+                points={shortestPath
+                  .map((id) => {
+                    const loc = mockLocations.find(l => l.id === id)!;
+                    return `${loc.coordinates.x},${loc.coordinates.y}`;
+                  })
+                  .join(' ')}
+                fill="none"
+                stroke="hsl(var(--primary))"
+                strokeWidth="1.5"
+                strokeDasharray="3 2"
+              >
+                <animate attributeName="stroke-dashoffset" from="10" to="0" dur="1.2s" repeatCount="indefinite" />
+              </polyline>
+            )}
           </svg>
 
           {/* Location Markers */}
           {visibleLocations.map((location) => {
             const isSelected = selectedLocation === location.id;
             const color = categoryColors[location.category as keyof typeof categoryColors];
+            const isStart = startLocationId === location.id;
+            const isEnd = endLocationId === location.id;
             
             return (
               <button
@@ -226,7 +241,9 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
               >
                 <div className="relative">
                   <div 
-                    className="w-6 h-6 rounded-full border-2 border-white shadow-medium flex items-center justify-center"
+                    className={`w-6 h-6 rounded-full border-2 border-white shadow-medium flex items-center justify-center ${
+                      isStart ? 'ring-2 ring-green-500' : isEnd ? 'ring-2 ring-red-500' : ''
+                    }`}
                     style={{ backgroundColor: color }}
                   >
                     <MapPin className="h-3 w-3 text-white" />
