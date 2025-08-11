@@ -113,6 +113,14 @@ const campusLocations: CampusLocation[] = [
     status: 'maintenance',
     description: 'Fitness center and workout facilities'
   },
+  {
+    id: '11',
+    name: 'Dome Building',
+    category: 'academic',
+    coordinates: { lat: 26.8413904, lng: 75.5657304 },
+    status: 'open',
+    description: 'Iconic dome-shaped building at MUJ'
+  },
 ];
 
 const categoryColors = {

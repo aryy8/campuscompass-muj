@@ -123,6 +123,7 @@ const Campus: React.FC = () => {
               <option value="8">Admin Office</option>
               <option value="9">Canteen</option>
               <option value="10">Gym</option>
+              <option value="11">Dome Building</option>
             </select>
           </div>
           <div className="flex items-center gap-2">
@@ -143,6 +144,7 @@ const Campus: React.FC = () => {
               <option value="8">Admin Office</option>
               <option value="9">Canteen</option>
               <option value="10">Gym</option>
+              <option value="11">Dome Building</option>
             </select>
           </div>
         </div>

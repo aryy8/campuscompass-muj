@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Map, 
@@ -23,6 +23,7 @@ const Index = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [buildingCount, setBuildingCount] = useState(0);
   const [hostelCount, setHostelCount] = useState(0);
+  const campusViewRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIsVisible(true);
@@ -60,6 +61,10 @@ const Index = () => {
   const handleCategorySelect = (category: any) => {
     // Navigate to campus with category filter
     navigate('/campus', { state: { selectedCategory: category.id } });
+  };
+
+  const handleScrollTo360 = () => {
+    campusViewRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
@@ -170,10 +175,11 @@ const Index = () => {
           </p>
 
           {/* Enhanced Hero Search with Glassmorphism */}
-          <div className={`mb-10 transition-all duration-1000 delay-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <div className={`mb-10 transition-all duration-1000 delay-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+               style={{ zIndex: 30, position: 'relative' }}>
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-white/10 rounded-2xl blur-xl" />
-              <div className="relative">
+              <div className="relative z-30">
                 <SearchBar 
                   onLocationSelect={handleSearchSelect}
                   placeholder="Search for buildings, departments, or services..."
@@ -184,70 +190,45 @@ const Index = () => {
           </div>
 
           {/* Enhanced Action Buttons with Better Styling */}
-          <div className={`flex flex-col sm:flex-row gap-6 justify-center transition-all duration-1000 delay-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <div className={`flex flex-col sm:flex-row gap-6 justify-center transition-all duration-1000 delay-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+               style={{ marginTop: '2.5rem' }}>
             <Button 
               variant="hero" 
               size="lg"
               onClick={handleExploreClick}
               className="text-lg px-10 py-7 h-auto hover:scale-105 hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-accent to-orange-500 border-0 shadow-xl"
             >
-              <Map className="mr-3 h-6 w-6" />
-              Explore Campus
-              <ArrowRight className="ml-3 h-6 w-6" />
+              <Navigation className="mr-3 h-6 w-6" />
+              Get Directions
             </Button>
-            
             <Button 
               variant="outline" 
               size="lg"
+              onClick={handleScrollTo360}
               className="text-lg px-10 py-7 h-auto bg-white/15 border-2 border-white/30 text-white hover:bg-white/25 hover:border-white/50 backdrop-blur-md hover:scale-105 transition-all duration-300 shadow-xl"
             >
-              <Navigation className="mr-3 h-6 w-6" />
-              Get Directions
+              <Map className="mr-3 h-6 w-6" />
+              Explore Campus
+              <ArrowRight className="ml-3 h-6 w-6" />
             </Button>
           </div>
         </div>
       </section>
 
-      {/* Enhanced Quick Stats Section */}
-      <section className="relative py-20 -mt-20 z-20">
-        <div className="container mx-auto px-4">
-          <div className={`grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto transition-all duration-1000 delay-1300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-            {/* Buildings Stats */}
-            <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-white/10 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="relative bg-white/15 backdrop-blur-md border border-white/20 rounded-2xl p-8 text-center hover:scale-105 transition-all duration-300 shadow-xl">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                  <Building2 className="h-8 w-8 text-white" />
-                </div>
-                <h3 className="text-4xl font-black text-white mb-2 drop-shadow-lg">{buildingCount}+</h3>
-                <p className="text-lg text-white/90 font-medium">Buildings</p>
-              </div>
-            </div>
-
-            {/* Hostels Stats */}
-            <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-white/10 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="relative bg-white/15 backdrop-blur-md border border-white/20 rounded-2xl p-8 text-center hover:scale-105 transition-all duration-300 shadow-xl">
-                <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                  <Home className="h-8 w-8 text-white" />
-                </div>
-                <h3 className="text-4xl font-black text-white mb-2 drop-shadow-lg">{hostelCount}+</h3>
-                <p className="text-lg text-white/90 font-medium">Hostels</p>
-              </div>
-            </div>
-
-            {/* Departments Stats */}
-            <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-white/10 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="relative bg-white/15 backdrop-blur-md border border-white/20 rounded-2xl p-8 text-center hover:scale-105 transition-all duration-300 shadow-xl">
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                  <GraduationCap className="h-8 w-8 text-white" />
-                </div>
-                <h3 className="text-4xl font-black text-white mb-2 drop-shadow-lg">100+</h3>
-                <p className="text-lg text-white/90 font-medium">Departments</p>
-              </div>
-            </div>
-          </div>
+      {/* 360 Degree View Section */}
+      <section ref={campusViewRef} className="py-12 px-4 bg-background flex flex-col items-center">
+        <h2 className="text-2xl font-bold mb-6 text-center">360° Campus View</h2>
+        <div className="w-full max-w-4xl aspect-video rounded-xl overflow-hidden shadow-2xl border border-gray-200">
+          <iframe
+            src="https://www.google.com/maps/embed?pb=!4v1754939868721!6m8!1m7!1sCAoSFkNJSE0wb2dLRUlDQWdJQzhxNVhCYnc.!2m2!1d26.84407091446291!2d75.56522833275928!3f30.981440496839397!4f4.626082950846595!5f0.7820865974627469"
+            width="100%"
+            height="100%"
+            style={{ border: 0 }}
+            allowFullScreen
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            title="360 Degree Campus View"
+          ></iframe>
         </div>
       </section>
 
@@ -426,20 +407,8 @@ const Index = () => {
 
       {/* Categories Section */}
       <section className="py-16 px-4">
-        <h2 className="text-4xl font-bold text-center mb-12 text-white">Explore Campus</h2>
+        <h2 className="text-4xl font-bold text-center mb-12 text-black">Explore Campus</h2>
         <CategoryGrid onCategorySelect={handleCategorySelect} />
-        <div className="mt-10 rounded-xl overflow-hidden border border-border shadow-soft">
-          <AspectRatio ratio={16/9}>
-            <iframe
-              title="MUJ on Google Maps"
-              src="https://www.google.com/maps?q=Manipal%20University%20Jaipur&z=15&output=embed"
-              className="w-full h-full"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              allowFullScreen
-            />
-          </AspectRatio>
-        </div>
       </section>
     </div>
   );
