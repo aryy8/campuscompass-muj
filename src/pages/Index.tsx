@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Map, 
@@ -20,6 +20,33 @@ import campusHero from '@/assets/campus-hero.jpg';
 
 const Index = () => {
   const navigate = useNavigate();
+  const [isVisible, setIsVisible] = useState(false);
+  const [buildingCount, setBuildingCount] = useState(0);
+  const [hostelCount, setHostelCount] = useState(0);
+
+  useEffect(() => {
+    setIsVisible(true);
+    
+    // Animate counters
+    const animateCounter = (setter: (value: number) => void, target: number, duration: number = 2000) => {
+      let start = 0;
+      const increment = target / (duration / 16);
+      const timer = setInterval(() => {
+        start += increment;
+        if (start >= target) {
+          setter(target);
+          clearInterval(timer);
+        } else {
+          setter(Math.floor(start));
+        }
+      }, 16);
+    };
+
+    setTimeout(() => {
+      animateCounter(setBuildingCount, 50, 2000);
+      animateCounter(setHostelCount, 15, 1500);
+    }, 1000);
+  }, []);
 
   const handleExploreClick = () => {
     navigate('/campus');
@@ -48,22 +75,22 @@ const Index = () => {
         </div>
 
         {/* Hero Content */}
-        <div className="relative z-10 text-center text-white max-w-4xl mx-auto px-4">
+        <div className={`relative z-10 text-center text-white max-w-4xl mx-auto px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <div className="mb-8">
-            <h1 className="text-5xl md:text-7xl font-bold mb-4 tracking-tight">
-              Uni<span className="text-accent">Way</span>
+            <h1 className="text-5xl md:text-7xl font-bold mb-4 tracking-tight animate-fade-in">
+              Uni<span className="text-accent animate-pulse">Way</span>
             </h1>
-            <p className="text-xl md:text-2xl text-white/90 font-medium mb-2">
+            <p className="text-xl md:text-2xl text-white/90 font-medium mb-2 animate-fade-in" style={{ animationDelay: '0.3s' }}>
               Campus Navigation Made Simple
             </p>
-            <p className="text-lg text-white/80 max-w-2xl mx-auto">
+            <p className="text-lg text-white/80 max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '0.6s' }}>
               Navigate Manipal University Jaipur with ease. Find buildings, get directions, 
               and discover campus facilities in seconds.
             </p>
           </div>
 
           {/* Hero Search */}
-          <div className="mb-8">
+          <div className={`mb-8 transition-all duration-1000 delay-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             <SearchBar 
               onLocationSelect={handleSearchSelect}
               placeholder="Search for buildings, departments, or services..."
@@ -72,12 +99,12 @@ const Index = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className={`flex flex-col sm:flex-row gap-4 justify-center transition-all duration-1000 delay-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             <Button 
               variant="hero" 
               size="lg"
               onClick={handleExploreClick}
-              className="text-lg px-8 py-6 h-auto"
+              className="text-lg px-8 py-6 h-auto hover-scale"
             >
               <Map className="mr-3 h-6 w-6" />
               Explore Campus
@@ -87,7 +114,7 @@ const Index = () => {
             <Button 
               variant="outline" 
               size="lg"
-              className="text-lg px-8 py-6 h-auto bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm"
+              className="text-lg px-8 py-6 h-auto bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm hover-scale"
             >
               <Navigation className="mr-3 h-6 w-6" />
               Get Directions
@@ -95,16 +122,16 @@ const Index = () => {
           </div>
 
           {/* Quick Stats */}
-          <div className="mt-12 grid grid-cols-3 gap-8 max-w-md mx-auto">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-accent">50+</div>
+          <div className={`mt-12 grid grid-cols-3 gap-8 max-w-md mx-auto transition-all duration-1000 delay-1300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <div className="text-center hover-scale">
+              <div className="text-2xl font-bold text-accent">{buildingCount}+</div>
               <div className="text-sm text-white/80">Buildings</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-accent">15</div>
+            <div className="text-center hover-scale">
+              <div className="text-2xl font-bold text-accent">{hostelCount}</div>
               <div className="text-sm text-white/80">Hostels</div>
             </div>
-            <div className="text-center">
+            <div className="text-center hover-scale">
               <div className="text-2xl font-bold text-accent">24/7</div>
               <div className="text-sm text-white/80">Navigation</div>
             </div>
