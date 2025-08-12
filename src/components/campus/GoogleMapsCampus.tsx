@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { MapPin, Navigation, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { calculateTimeBetweenLocations, type Location as TimeLocation } from '@/lib/time-calculator';
 
 // Google Maps types
 declare global {
@@ -115,11 +116,115 @@ const campusLocations: CampusLocation[] = [
   },
   {
     id: '11',
-    name: 'Dome Building',
+    name: 'B1',
     category: 'academic',
-    coordinates: { lat: 26.8413904, lng: 75.5657304 },
+    coordinates: { lat: 26.841461, lng: 75.562827 },
     status: 'open',
-    description: 'Iconic dome-shaped building at MUJ'
+    description: 'Academic building B1 with classrooms and labs'
+  },
+  {
+    id: '12',
+    name: 'B2',
+    category: 'academic',
+    coordinates: { lat: 26.841565, lng: 75.562756 },
+    status: 'open',
+    description: 'Academic building B2 with lecture halls'
+  },
+  {
+    id: '13',
+    name: 'B3',
+    category: 'academic',
+    coordinates: { lat: 26.841792, lng: 75.562706 },
+    status: 'open',
+    description: 'Academic building B3 with research facilities'
+  },
+  {
+    id: '14',
+    name: 'B4',
+    category: 'academic',
+    coordinates: { lat: 26.841401, lng: 75.562684 },
+    status: 'open',
+    description: 'Academic building B4 with computer labs'
+  },
+  {
+    id: '15',
+    name: 'B5',
+    category: 'academic',
+    coordinates: { lat: 26.841476, lng: 75.562622 },
+    status: 'open',
+    description: 'Academic building B5 with engineering labs'
+  },
+  {
+    id: '16',
+    name: 'B6',
+    category: 'academic',
+    coordinates: { lat: 26.841360, lng: 75.562576 },
+    status: 'open',
+    description: 'Academic building B6 with seminar rooms'
+  },
+  {
+    id: '17',
+    name: 'B7',
+    category: 'academic',
+    coordinates: { lat: 26.841332, lng: 75.562490 },
+    status: 'open',
+    description: 'Academic building B7 with conference facilities'
+  },
+  {
+    id: '18',
+    name: 'B8',
+    category: 'academic',
+    coordinates: { lat: 26.841315, lng: 75.561746 },
+    status: 'open',
+    description: 'Academic building B8 with advanced facilities'
+  },
+  {
+    id: '19',
+    name: 'G1',
+    category: 'academic',
+    coordinates: { lat: 26.840927, lng: 75.563042 },
+    status: 'open',
+    description: 'Academic building G1 with modern facilities'
+  },
+  {
+    id: '20',
+    name: 'G2',
+    category: 'academic',
+    coordinates: { lat: 26.840879, lng: 75.562884 },
+    status: 'open',
+    description: 'Academic building G2 with research labs'
+  },
+  {
+    id: '21',
+    name: 'G3',
+    category: 'academic',
+    coordinates: { lat: 26.840819, lng: 75.562814 },
+    status: 'open',
+    description: 'Academic building G3 with lecture halls'
+  },
+  {
+    id: '22',
+    name: 'G4',
+    category: 'academic',
+    coordinates: { lat: 26.840616, lng: 75.562636 },
+    status: 'open',
+    description: 'Academic building G4 with computer facilities'
+  },
+  {
+    id: '23',
+    name: 'G5',
+    category: 'academic',
+    coordinates: { lat: 26.840484, lng: 75.562679 },
+    status: 'open',
+    description: 'Academic building G5 with engineering labs'
+  },
+  {
+    id: '24',
+    name: 'Cricket Ground',
+    category: 'recreation',
+    coordinates: { lat: 26.845316, lng: 75.564126 },
+    status: 'open',
+    description: 'Cricket ground with professional facilities'
   },
 ];
 
@@ -146,6 +251,7 @@ const GoogleMapsCampus: React.FC<GoogleMapsCampusProps> = ({
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
 
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [currentMapType, setCurrentMapType] = useState<google.maps.MapTypeId>(google.maps.MapTypeId.SATELLITE);
 
   // Initialize Google Maps
   useEffect(() => {
@@ -157,7 +263,7 @@ const GoogleMapsCampus: React.FC<GoogleMapsCampusProps> = ({
     mapInstance.current = new window.google.maps.Map(mapRef.current, {
       center,
       zoom: 17,
-      mapTypeId: google.maps.MapTypeId.ROADMAP,
+      mapTypeId: google.maps.MapTypeId.SATELLITE,
       mapTypeControl: true,
       streetViewControl: false,
       fullscreenControl: true,
@@ -170,6 +276,9 @@ const GoogleMapsCampus: React.FC<GoogleMapsCampusProps> = ({
         }
       ]
     });
+
+    // Set initial map type state
+    setCurrentMapType(google.maps.MapTypeId.SATELLITE);
 
     // Initialize services
     directionsServiceRef.current = new window.google.maps.DirectionsService();
@@ -260,16 +369,25 @@ const GoogleMapsCampus: React.FC<GoogleMapsCampusProps> = ({
     });
   }, [isMapLoaded, onLocationSelect]);
 
-  // Calculate distance between two points (Haversine formula)
-  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    const R = 6371; // Earth's radius in kilometers
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
+  // Enhanced time calculation using the new utility
+  const calculateEnhancedTime = (startLoc: CampusLocation, endLoc: CampusLocation) => {
+    const timeLocation: TimeLocation = {
+      id: startLoc.id,
+      name: startLoc.name,
+      coordinates: startLoc.coordinates,
+      category: startLoc.category,
+      status: startLoc.status
+    };
+    
+    const endTimeLocation: TimeLocation = {
+      id: endLoc.id,
+      name: endLoc.name,
+      coordinates: endLoc.coordinates,
+      category: endLoc.category,
+      status: endLoc.status
+    };
+    
+    return calculateTimeBetweenLocations(timeLocation, endTimeLocation);
   };
 
   // Handle directions
@@ -293,19 +411,13 @@ const GoogleMapsCampus: React.FC<GoogleMapsCampusProps> = ({
     console.log('Start coordinates:', startLocation.coordinates);
     console.log('End coordinates:', endLocation.coordinates);
 
-    // Calculate distance and estimated walking time
-    const distance = calculateDistance(
-      startLocation.coordinates.lat, 
-      startLocation.coordinates.lng,
-      endLocation.coordinates.lat, 
-      endLocation.coordinates.lng
-    );
-    const walkingTime = Math.round(distance * 12); // ~12 minutes per km walking
+    // Calculate enhanced time information
+    const timeCalculation = calculateEnhancedTime(startLocation, endLocation);
 
     // Store route info for display
     window.routeInfo = {
-      distance: `${(distance * 1000).toFixed(0)}m`,
-      duration: `${walkingTime} min`,
+      distance: timeCalculation.formattedDistance,
+      duration: timeCalculation.formattedWalkingTime,
       steps: []
     };
 
@@ -399,8 +511,38 @@ const GoogleMapsCampus: React.FC<GoogleMapsCampusProps> = ({
               }
             }}
             className="h-8 w-8"
+            title="Reset View"
           >
             <Navigation className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        {/* Map Type Toggle */}
+        <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg p-1 shadow-lg">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              if (mapInstance.current) {
+                const newMapType = currentMapType === google.maps.MapTypeId.SATELLITE 
+                  ? google.maps.MapTypeId.ROADMAP 
+                  : google.maps.MapTypeId.SATELLITE;
+                mapInstance.current.setMapTypeId(newMapType);
+                setCurrentMapType(newMapType);
+              }
+            }}
+            className="h-8 w-8"
+            title={`Switch to ${currentMapType === google.maps.MapTypeId.SATELLITE ? 'Road' : 'Satellite'} view`}
+          >
+            {currentMapType === google.maps.MapTypeId.SATELLITE ? (
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 4m0 13V4m-6 3l6-3" />
+              </svg>
+            ) : (
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+              </svg>
+            )}
           </Button>
         </div>
       </div>
@@ -408,10 +550,22 @@ const GoogleMapsCampus: React.FC<GoogleMapsCampusProps> = ({
       {/* Directions Info Panel */}
       {startLocationId && endLocationId && (
         <div className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg p-4 shadow-lg max-w-sm">
-          <h4 className="font-medium text-sm mb-3 flex items-center gap-2 text-blue-600">
-            <Navigation className="h-4 w-4" />
-            Walking Route
-          </h4>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-medium text-sm flex items-center gap-2 text-blue-600">
+              <Navigation className="h-4 w-4" />
+              Route Information
+            </h4>
+            <Badge 
+              variant="outline" 
+              className={`text-xs ${
+                currentMapType === google.maps.MapTypeId.SATELLITE 
+                  ? 'bg-green-100 text-green-800 border-green-200' 
+                  : 'bg-blue-100 text-blue-800 border-blue-200'
+              }`}
+            >
+              {currentMapType === google.maps.MapTypeId.SATELLITE ? 'Satellite' : 'Road'}
+            </Badge>
+          </div>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between items-center">
               <span className="text-gray-600">From:</span>
@@ -427,13 +581,13 @@ const GoogleMapsCampus: React.FC<GoogleMapsCampusProps> = ({
                 <span className="font-medium">{window.routeInfo?.distance || 'Calculating...'}</span>
               </div>
               <div className="flex justify-between items-center text-blue-600">
-                <span>Time:</span>
+                <span>Walking:</span>
                 <span className="font-medium">{window.routeInfo?.duration || 'Calculating...'}</span>
               </div>
               <div className="mt-2 text-xs text-gray-500">
                 <p>• Blue line shows the walking path</p>
                 <p>• Arrows indicate direction of travel</p>
-                <p>• Map automatically adjusts to show full route</p>
+                <p>• Check sidebar for detailed time options</p>
               </div>
             </div>
           </div>
@@ -442,7 +596,19 @@ const GoogleMapsCampus: React.FC<GoogleMapsCampusProps> = ({
 
       {/* Legend */}
       <div className="absolute bottom-4 left-4 z-10 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg p-3 shadow-lg max-w-xs">
-        <h4 className="font-medium text-sm mb-2">Campus Locations</h4>
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="font-medium text-sm">Campus Locations</h4>
+          <Badge 
+            variant="outline" 
+            className={`text-xs ${
+              currentMapType === google.maps.MapTypeId.SATELLITE 
+                ? 'bg-green-100 text-green-800 border-green-200' 
+                : 'bg-blue-100 text-blue-800 border-blue-200'
+            }`}
+          >
+            {currentMapType === google.maps.MapTypeId.SATELLITE ? 'Satellite' : 'Road'}
+          </Badge>
+        </div>
         <div className="grid grid-cols-2 gap-2 text-xs">
           {Object.entries(categoryColors).map(([category, color]) => (
             <div key={category} className="flex items-center gap-2">
@@ -453,6 +619,10 @@ const GoogleMapsCampus: React.FC<GoogleMapsCampusProps> = ({
               <span className="capitalize">{category}</span>
             </div>
           ))}
+        </div>
+        <div className="mt-2 pt-2 border-t border-gray-200 text-xs text-gray-600">
+          <p>• Use the map toggle button to switch views</p>
+          <p>• Satellite view shows real campus imagery</p>
         </div>
       </div>
     </div>

@@ -28,6 +28,20 @@ const mockSuggestions: SearchSuggestion[] = [
   { id: '8', name: 'Computer Science', type: 'department', category: 'Academic' },
   { id: '9', name: 'Registrar', type: 'service', category: 'Admin' },
   { id: '10', name: 'Canteen', type: 'building', category: 'Dining' },
+  { id: '11', name: 'B1', type: 'building', category: 'Academic', fullName: 'B1' },
+  { id: '12', name: 'B2', type: 'building', category: 'Academic', fullName: 'B2' },
+  { id: '13', name: 'B3', type: 'building', category: 'Academic', fullName: 'B3' },
+  { id: '14', name: 'B4', type: 'building', category: 'Academic', fullName: 'B4' },
+  { id: '15', name: 'B5', type: 'building', category: 'Academic', fullName: 'B5' },
+  { id: '16', name: 'B6', type: 'building', category: 'Academic', fullName: 'B6' },
+  { id: '17', name: 'B7', type: 'building', category: 'Academic', fullName: 'B7' },
+  { id: '18', name: 'B8', type: 'building', category: 'Academic', fullName: 'B8' },
+  { id: '19', name: 'G1', type: 'building', category: 'Academic', fullName: 'G1' },
+  { id: '20', name: 'G2', type: 'building', category: 'Academic', fullName: 'G2' },
+  { id: '21', name: 'G3', type: 'building', category: 'Academic', fullName: 'G3' },
+  { id: '22', name: 'G4', type: 'building', category: 'Academic', fullName: 'G4' },
+  { id: '23', name: 'G5', type: 'building', category: 'Academic', fullName: 'G5' },
+  { id: '24', name: 'Cricket Ground', type: 'building', category: 'Recreation', fullName: 'Cricket Ground' },
 ];
 
 const SearchBar: React.FC<SearchBarProps> = ({ 

@@ -4,8 +4,10 @@ import { Button } from '@/components/ui/button';
 import SearchBar from '@/components/campus/SearchBar';
 import { CategoryGrid, categories, type Category } from '@/components/campus/CategoryGrid';
 import GoogleMapsCampus, { type CampusLocation } from '@/components/campus/GoogleMapsCampus';
+import TimeCalculator from '@/components/campus/TimeCalculator';
 import { useNavigate } from 'react-router-dom';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { campusLocations } from '@/lib/campus-data';
 
 const Campus: React.FC = () => {
   const navigate = useNavigate();
@@ -123,7 +125,20 @@ const Campus: React.FC = () => {
               <option value="8">Admin Office</option>
               <option value="9">Canteen</option>
               <option value="10">Gym</option>
-              <option value="11">Dome Building</option>
+              <option value="11">B1</option>
+              <option value="12">B2</option>
+              <option value="13">B3</option>
+              <option value="14">B4</option>
+              <option value="15">B5</option>
+              <option value="16">B6</option>
+              <option value="17">B7</option>
+              <option value="18">B8</option>
+              <option value="19">G1</option>
+              <option value="20">G2</option>
+              <option value="21">G3</option>
+              <option value="22">G4</option>
+              <option value="23">G5</option>
+              <option value="24">Cricket Ground</option>
             </select>
           </div>
           <div className="flex items-center gap-2">
@@ -144,7 +159,20 @@ const Campus: React.FC = () => {
               <option value="8">Admin Office</option>
               <option value="9">Canteen</option>
               <option value="10">Gym</option>
-              <option value="11">Dome Building</option>
+              <option value="11">B1</option>
+              <option value="12">B2</option>
+              <option value="13">B3</option>
+              <option value="14">B4</option>
+              <option value="15">B5</option>
+              <option value="16">B6</option>
+              <option value="17">B7</option>
+              <option value="18">B8</option>
+              <option value="19">G1</option>
+              <option value="20">G2</option>
+              <option value="21">G3</option>
+              <option value="22">G4</option>
+              <option value="23">G5</option>
+              <option value="24">Cricket Ground</option>
             </select>
           </div>
         </div>
@@ -178,22 +206,87 @@ const Campus: React.FC = () => {
 
       {/* Interactive Campus Map Container */}
       <main className="container mx-auto px-4 py-4 flex-1">
-        <div className="h-[calc(100vh-200px)] min-h-[600px]">
-          {isGoogleMapsLoaded ? (
-            <GoogleMapsCampus
-              selectedLocation={selectedLocation}
-              onLocationSelect={handleLocationSelect}
-              startLocationId={startId}
-              endLocationId={endId}
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-muted rounded-xl">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading Google Maps...</p>
-              </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Map Section */}
+          <div className="lg:col-span-2">
+            <div className="h-[calc(100vh-200px)] min-h-[600px]">
+              {isGoogleMapsLoaded ? (
+                <GoogleMapsCampus
+                  selectedLocation={selectedLocation}
+                  onLocationSelect={handleLocationSelect}
+                  startLocationId={startId}
+                  endLocationId={endId}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-muted rounded-xl">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading Google Maps...</p>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
+
+          {/* Time Calculator Sidebar - Hidden on mobile, shown on desktop */}
+          <div className="hidden lg:block lg:col-span-1">
+            <div className="sticky top-24 max-h-[calc(100vh-100px)] overflow-y-auto">
+              <TimeCalculator
+                startLocation={(() => {
+                  const loc = campusLocations.find(loc => loc.id === startId);
+                  if (!loc) return null;
+                  return {
+                    id: loc.id,
+                    name: loc.name,
+                    coordinates: { lat: 26.8431 + loc.coordinates.x * 0.0001, lng: 75.5647 + loc.coordinates.y * 0.0001 },
+                    category: loc.category,
+                    status: loc.status
+                  };
+                })()}
+                endLocation={(() => {
+                  const loc = campusLocations.find(loc => loc.id === endId);
+                  if (!loc) return null;
+                  return {
+                    id: loc.id,
+                    name: loc.name,
+                    coordinates: { lat: 26.8431 + loc.coordinates.x * 0.0001, lng: 75.5647 + loc.coordinates.y * 0.0001 },
+                    category: loc.category,
+                    status: loc.status
+                  };
+                })()}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Time Calculator - Fixed bottom on mobile */}
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-background border-t border-border">
+          <div className="max-h-96 overflow-y-auto">
+            <TimeCalculator
+              startLocation={(() => {
+                const loc = campusLocations.find(loc => loc.id === startId);
+                if (!loc) return null;
+                return {
+                  id: loc.id,
+                  name: loc.name,
+                  coordinates: { lat: 26.8431 + loc.coordinates.x * 0.0001, lng: 75.5647 + loc.coordinates.y * 0.0001 },
+                  category: loc.category,
+                  status: loc.status
+                };
+              })()}
+              endLocation={(() => {
+                const loc = campusLocations.find(loc => loc.id === endId);
+                if (!loc) return null;
+                return {
+                  id: loc.id,
+                  name: loc.name,
+                  coordinates: { lat: 26.8431 + loc.coordinates.x * 0.0001, lng: 75.5647 + loc.coordinates.y * 0.0001 },
+                  category: loc.category,
+                  status: loc.status
+                };
+              })()}
+            />
+          </div>
         </div>
       </main>
 

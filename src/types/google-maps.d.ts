@@ -5,6 +5,8 @@ declare namespace google.maps {
     setZoom(zoom: number): void;
     fitBounds(bounds: LatLngBounds): void;
     panTo(latLng: LatLng | LatLngLiteral): void;
+    getMapTypeId(): MapTypeId;
+    setMapTypeId(mapTypeId: MapTypeId): void;
   }
 
   interface MapOptions {
