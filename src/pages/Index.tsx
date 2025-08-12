@@ -17,6 +17,10 @@ import { Button } from '@/components/ui/button';
 import SearchBar from '@/components/campus/SearchBar';
 import { CategoryGrid } from '@/components/campus/CategoryGrid';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import ThemeToggle from '@/components/ui/theme-toggle';
+import LoginDialog from '@/components/ui/login-dialog';
+import Footer from '@/components/Footer';
+import { locationLabels } from '@/lib/location-labels';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -24,6 +28,20 @@ const Index = () => {
   const [buildingCount, setBuildingCount] = useState(0);
   const [hostelCount, setHostelCount] = useState(0);
   const campusViewRef = useRef<HTMLDivElement>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+
+  const categoryIdToTitle: Record<string, string> = {
+    academic: 'Academic',
+    dining: 'Dining',
+    hostels: 'Hostels',
+    recreation: 'Recreation',
+    admin: 'Admin',
+    medical: 'Medical',
+  };
+
+  const categoryItems = selectedCategoryId
+    ? locationLabels.filter(l => l.category === categoryIdToTitle[selectedCategoryId])
+    : [];
 
   useEffect(() => {
     setIsVisible(true);
@@ -54,13 +72,11 @@ const Index = () => {
   };
 
   const handleSearchSelect = (suggestion: any) => {
-    // Navigate to campus with selected location
     navigate('/campus', { state: { selectedLocation: suggestion.id } });
   };
 
   const handleCategorySelect = (category: any) => {
-    // Navigate to campus with category filter
-    navigate('/campus', { state: { selectedCategory: category.id } });
+    setSelectedCategoryId(category.id);
   };
 
   const handleScrollTo360 = () => {
@@ -71,6 +87,11 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
+        {/* Controls overlay */}
+        <div className="absolute top-4 right-4 z-40 flex items-center gap-2">
+          <ThemeToggle />
+          <LoginDialog />
+        </div>
         {/* Background Image with Enhanced Overlay */}
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -106,41 +127,27 @@ const Index = () => {
         {/* Hero Content with Enhanced Styling */}
         <div className={`relative z-10 text-center text-white max-w-5xl mx-auto px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <div className="mb-8 relative flex flex-col items-center justify-center">
-            {/* Enhanced Animated SVG above the logo */}
+            {/* Paper rocket animation over the logo */}
             <svg
-              width="220"
-              height="60"
-              viewBox="0 0 220 60"
+              width="240"
+              height="70"
+              viewBox="0 0 240 70"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
-              className="mt-6 mb-1 md:mt-8 md:mb-2 w-[180px] md:w-[220px] h-[48px] md:h-[60px] drop-shadow-2xl"
+              xmlnsXlink="http://www.w3.org/1999/xlink"
+              className="mt-6 mb-1 md:mt-8 md:mb-2 w-[200px] md:w-[240px] h-[54px] md:h-[70px]"
               style={{ display: 'block' }}
             >
-              <path
-                id="uw-curve"
-                d="M 20 58 Q 110 0 200 58"
-                stroke="white"
-                strokeWidth="3"
-                strokeDasharray="6,8"
-                fill="none"
-                opacity="0.9"
-                filter="drop-shadow(0 0 8px rgba(255,255,255,0.5))"
-              />
+              {/* Invisible motion path (no dashed arc) */}
+              <path id="rocket-curve" d="M 10 60 Q 120 -5 230 60" stroke="none" fill="none" />
               <g>
-                <animateMotion
-                  dur="2.5s"
-                  repeatCount="indefinite"
-                  keyPoints="0;1"
-                  keyTimes="0;1"
-                  calcMode="linear"
-                  rotate="auto"
-                >
-                  <mpath xlinkHref="#uw-curve" />
+                <animateMotion dur="3s" repeatCount="indefinite" keyPoints="0;1" keyTimes="0;1" calcMode="linear" rotate="auto">
+                  <mpath xlinkHref="#rocket-curve" />
                 </animateMotion>
-                {/* Enhanced paper rocket SVG */}
-                <svg width="24" height="24" viewBox="0 0 24 24" style={{ transform: 'rotate(90deg)' }}>
+                {/* Paper rocket */}
+                <svg width="26" height="26" viewBox="0 0 24 24" style={{ transform: 'rotate(90deg)' }}>
                   <g>
-                    <polygon points="12,2 15,16 12,13 9,16" fill="#fff" stroke="#facc15" strokeWidth="1.2" />
+                    <polygon points="12,2 15,16 12,13 9,16" fill="#ffffff" stroke="#facc15" strokeWidth="1.2" />
                     <polygon points="12,13 15,16 12,22 9,16" fill="#facc15" stroke="#facc15" strokeWidth="0.5" />
                     <circle cx="12" cy="6" r="1.1" fill="#facc15" />
                   </g>
@@ -407,9 +414,41 @@ const Index = () => {
 
       {/* Categories Section */}
       <section className="py-16 px-4">
-        <h2 className="text-4xl font-bold text-center mb-12 text-black">Explore Campus</h2>
-        <CategoryGrid onCategorySelect={handleCategorySelect} />
+        <h2 className="text-4xl font-bold text-center mb-8 text-black">Explore Campus</h2>
+        <div className="max-w-6xl mx-auto">
+          <CategoryGrid onCategorySelect={handleCategorySelect} />
+
+          {selectedCategoryId && (
+            <div className="mt-8">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-2xl font-semibold">
+                  {categoryIdToTitle[selectedCategoryId]} locations ({categoryItems.length})
+                </h3>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedCategoryId(null)}>Clear</Button>
+              </div>
+
+              {categoryItems.length === 0 ? (
+                <p className="text-muted-foreground">No locations available for this category yet.</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {categoryItems.map(item => (
+                    <button
+                      key={item.id}
+                      onClick={() => navigate('/campus', { state: { selectedLocation: item.id } })}
+                      className="text-left p-3 rounded-lg border border-border bg-card hover:bg-muted transition-colors"
+                    >
+                      <div className="font-medium">{item.name}</div>
+                      <div className="text-xs text-muted-foreground">{item.category}</div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </section>
+
+      <Footer />
     </div>
   );
 };

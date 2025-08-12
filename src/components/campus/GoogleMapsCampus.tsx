@@ -226,6 +226,166 @@ const campusLocations: CampusLocation[] = [
     status: 'open',
     description: 'Cricket ground with professional facilities'
   },
+  {
+    id: '25',
+    name: 'grand stairs',
+    category: 'recreation',
+    coordinates: { lat: 26.842529, lng: 75.565437 },
+    status: 'open',
+    description: 'Grand stairs landmark'
+  },
+  {
+    id: '26',
+    name: 'AB 2',
+    category: 'academic',
+    coordinates: { lat: 26.842901, lng: 75.565910 },
+    status: 'open',
+    description: 'Academic Block 2'
+  },
+  {
+    id: '27',
+    name: 'AB 1',
+    category: 'academic',
+    coordinates: { lat: 26.842315, lng: 75.564995 },
+    status: 'open',
+    description: 'Academic Block 1 (AB 1)'
+  },
+  {
+    id: '28',
+    name: 'AB 4',
+    category: 'academic',
+    coordinates: { lat: 26.844088, lng: 75.564768 },
+    status: 'open',
+    description: 'Academic Block 4'
+  },
+  {
+    id: '29',
+    name: 'AB 3',
+    category: 'academic',
+    coordinates: { lat: 26.843668, lng: 75.564332 },
+    status: 'open',
+    description: 'Academic Block 3'
+  },
+  {
+    id: '30',
+    name: 'Vasanti Pai audi',
+    category: 'academic',
+    coordinates: { lat: 26.844027, lng: 75.563927 },
+    status: 'open',
+    description: 'Vasanti Pai Auditorium'
+  },
+  {
+    id: '31',
+    name: 'Sharda Pai audi',
+    category: 'academic',
+    coordinates: { lat: 26.843167, lng: 75.565822 },
+    status: 'open',
+    description: 'Sharda Pai Auditorium'
+  },
+  {
+    id: '32',
+    name: 'TMA Pai audi',
+    category: 'academic',
+    coordinates: { lat: 26.843374, lng: 75.566596 },
+    status: 'open',
+    description: 'TMA Pai Auditorium'
+  },
+  {
+    id: '33',
+    name: 'Old mess',
+    category: 'dining',
+    coordinates: { lat: 26.843100, lng: 75.565256 },
+    status: 'open',
+    description: 'Old mess dining area'
+  },
+  {
+    id: '34',
+    name: 'Blue spring',
+    category: 'dining',
+    coordinates: { lat: 26.841211, lng: 75.561601 },
+    status: 'open',
+    description: 'Blue Spring cafe'
+  },
+  {
+    id: '35',
+    name: 'Blue dove',
+    category: 'dining',
+    coordinates: { lat: 26.840427, lng: 75.561778 },
+    status: 'open',
+    description: 'Blue Dove restaurant'
+  },
+  {
+    id: '36',
+    name: 'Joggers park',
+    category: 'recreation',
+    coordinates: { lat: 26.840216, lng: 75.563530 },
+    status: 'open',
+    description: 'Joggers park'
+  },
+  {
+    id: '37',
+    name: 'Tandoor',
+    category: 'dining',
+    coordinates: { lat: 26.840884, lng: 75.563428 },
+    status: 'open',
+    description: 'Tandoor eatery'
+  },
+  {
+    id: '38',
+    name: 'Jaipur bakers',
+    category: 'dining',
+    coordinates: { lat: 26.840625, lng: 75.562656 },
+    status: 'open',
+    description: 'Jaipur Bakers'
+  },
+  {
+    id: '39',
+    name: 'Laundry',
+    category: 'admin',
+    coordinates: { lat: 26.840446, lng: 75.561480 },
+    status: 'open',
+    description: 'Laundry service'
+  },
+  {
+    id: '40',
+    name: 'GHS office',
+    category: 'admin',
+    coordinates: { lat: 26.840101, lng: 75.561351 },
+    status: 'open',
+    description: 'GHS Office'
+  },
+  {
+    id: '41',
+    name: 'Court',
+    category: 'recreation',
+    coordinates: { lat: 26.841908, lng: 75.561179 },
+    status: 'open',
+    description: 'Sports court'
+  },
+  {
+    id: '42',
+    name: 'Subway',
+    category: 'dining',
+    coordinates: { lat: 26.841623, lng: 75.563467 },
+    status: 'open',
+    description: 'Subway outlet'
+  },
+  {
+    id: '43',
+    name: 'cab rent',
+    category: 'admin',
+    coordinates: { lat: 26.841783, lng: 75.563341 },
+    status: 'open',
+    description: 'Cab rental point'
+  },
+  {
+    id: '44',
+    name: 'library',
+    category: 'academic',
+    coordinates: { lat: 26.841504, lng: 75.565341 },
+    status: 'open',
+    description: 'Library'
+  },
 ];
 
 const categoryColors = {

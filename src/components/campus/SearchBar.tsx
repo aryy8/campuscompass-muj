@@ -17,32 +17,22 @@ interface SearchBarProps {
   variant?: 'default' | 'hero';
 }
 
-const mockSuggestions: SearchSuggestion[] = [
-  { id: '1', name: 'AB1', type: 'building', category: 'Academic', fullName: 'Academic Block 1' },
-  { id: '2', name: 'Central Library', type: 'building', category: 'Academic' },
-  { id: '3', name: 'Hostel A', type: 'building', category: 'Hostels' },
-  { id: '4', name: 'Food Court', type: 'building', category: 'Dining' },
-  { id: '5', name: 'Medical Center', type: 'building', category: 'Medical' },
-  { id: '6', name: 'Sports Complex', type: 'building', category: 'Recreation' },
-  { id: '7', name: 'Admin Office', type: 'building', category: 'Admin' },
-  { id: '8', name: 'Computer Science', type: 'department', category: 'Academic' },
-  { id: '9', name: 'Registrar', type: 'service', category: 'Admin' },
-  { id: '10', name: 'Canteen', type: 'building', category: 'Dining' },
-  { id: '11', name: 'B1', type: 'building', category: 'Academic', fullName: 'B1' },
-  { id: '12', name: 'B2', type: 'building', category: 'Academic', fullName: 'B2' },
-  { id: '13', name: 'B3', type: 'building', category: 'Academic', fullName: 'B3' },
-  { id: '14', name: 'B4', type: 'building', category: 'Academic', fullName: 'B4' },
-  { id: '15', name: 'B5', type: 'building', category: 'Academic', fullName: 'B5' },
-  { id: '16', name: 'B6', type: 'building', category: 'Academic', fullName: 'B6' },
-  { id: '17', name: 'B7', type: 'building', category: 'Academic', fullName: 'B7' },
-  { id: '18', name: 'B8', type: 'building', category: 'Academic', fullName: 'B8' },
-  { id: '19', name: 'G1', type: 'building', category: 'Academic', fullName: 'G1' },
-  { id: '20', name: 'G2', type: 'building', category: 'Academic', fullName: 'G2' },
-  { id: '21', name: 'G3', type: 'building', category: 'Academic', fullName: 'G3' },
-  { id: '22', name: 'G4', type: 'building', category: 'Academic', fullName: 'G4' },
-  { id: '23', name: 'G5', type: 'building', category: 'Academic', fullName: 'G5' },
-  { id: '24', name: 'Cricket Ground', type: 'building', category: 'Recreation', fullName: 'Cricket Ground' },
-];
+// Lazy-load labels on first use
+let cachedSuggestions: SearchSuggestion[] | null = null;
+
+const loadSuggestions = async (): Promise<SearchSuggestion[]> => {
+  if (cachedSuggestions) return cachedSuggestions;
+  const mod = await import('@/lib/location-labels');
+  const mapped: SearchSuggestion[] = mod.locationLabels.map(l => ({
+    id: l.id,
+    name: l.name,
+    fullName: l.name,
+    type: 'building',
+    category: l.category,
+  }));
+  cachedSuggestions = mapped;
+  return mapped;
+};
 
 const SearchBar: React.FC<SearchBarProps> = ({ 
   onLocationSelect, 
@@ -52,9 +42,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [recentSearches] = useState<SearchSuggestion[]>([
-    mockSuggestions[0], mockSuggestions[1], mockSuggestions[4]
-  ]);
+  const [recentSearches, setRecentSearches] = useState<SearchSuggestion[]>([]);
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -68,12 +56,25 @@ const SearchBar: React.FC<SearchBarProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    // Preload a small recent list lazily
+    (async () => {
+      const all = await loadSuggestions();
+      setRecentSearches(all.slice(0, 5));
+      if (!query) {
+        setSuggestions(all.slice(0, 8));
+      }
+    })();
+  }, [query]);
+
+  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setQuery(value);
 
+    const all = await loadSuggestions();
+
     if (value.trim()) {
-      const filtered = mockSuggestions.filter(suggestion =>
+      const filtered = all.filter(suggestion =>
         suggestion.name.toLowerCase().includes(value.toLowerCase()) ||
         suggestion.fullName?.toLowerCase().includes(value.toLowerCase()) ||
         suggestion.category.toLowerCase().includes(value.toLowerCase())
@@ -81,7 +82,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
       setSuggestions(filtered);
       setShowSuggestions(true);
     } else {
-      setSuggestions(recentSearches);
+      setSuggestions(recentSearches.length ? recentSearches : all.slice(0, 8));
       setShowSuggestions(true);
     }
   };
@@ -117,8 +118,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
           placeholder={placeholder}
           value={query}
           onChange={handleInputChange}
-          onFocus={() => {
-            setSuggestions(query ? suggestions : recentSearches);
+          onFocus={async () => {
+            const all = await loadSuggestions();
+            setSuggestions(query ? suggestions : (recentSearches.length ? recentSearches : all.slice(0, 8)));
             setShowSuggestions(true);
           }}
           className={`pl-12 pr-4 py-3 w-full rounded-xl border-2 transition-all duration-200 focus:border-primary ${

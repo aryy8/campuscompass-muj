@@ -8,6 +8,7 @@ import TimeCalculator from '@/components/campus/TimeCalculator';
 import { useNavigate } from 'react-router-dom';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { campusLocations } from '@/lib/campus-data';
+import Footer from '@/components/Footer';
 
 const Campus: React.FC = () => {
   const navigate = useNavigate();
@@ -109,71 +110,21 @@ const Campus: React.FC = () => {
         <div className="grid md:grid-cols-2 gap-3 mb-6">
           <div className="flex items-center gap-2">
             <Flag className="h-4 w-4 text-muted-foreground" />
-            <select
-              value={startId}
-              onChange={(e) => setStartId(e.target.value)}
-              className="w-full h-10 rounded-md border border-border bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="">From: Select a start</option>
-              <option value="1">Academic Block 1</option>
-              <option value="2">Central Library</option>
-              <option value="3">Food Court</option>
-              <option value="4">Hostel A</option>
-              <option value="5">Hostel B</option>
-              <option value="6">Sports Complex</option>
-              <option value="7">Medical Center</option>
-              <option value="8">Admin Office</option>
-              <option value="9">Canteen</option>
-              <option value="10">Gym</option>
-              <option value="11">B1</option>
-              <option value="12">B2</option>
-              <option value="13">B3</option>
-              <option value="14">B4</option>
-              <option value="15">B5</option>
-              <option value="16">B6</option>
-              <option value="17">B7</option>
-              <option value="18">B8</option>
-              <option value="19">G1</option>
-              <option value="20">G2</option>
-              <option value="21">G3</option>
-              <option value="22">G4</option>
-              <option value="23">G5</option>
-              <option value="24">Cricket Ground</option>
-            </select>
+            <div className="w-full">
+              <SearchBar
+                onLocationSelect={(s: any) => setStartId(s.id)}
+                placeholder="From: Search a start location"
+              />
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <NavIcon className="h-4 w-4 text-muted-foreground" />
-            <select
-              value={endId}
-              onChange={(e) => setEndId(e.target.value)}
-              className="w-full h-10 rounded-md border border-border bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="">To: Select a destination</option>
-              <option value="1">Academic Block 1</option>
-              <option value="2">Central Library</option>
-              <option value="3">Food Court</option>
-              <option value="4">Hostel A</option>
-              <option value="5">Hostel B</option>
-              <option value="6">Sports Complex</option>
-              <option value="7">Medical Center</option>
-              <option value="8">Admin Office</option>
-              <option value="9">Canteen</option>
-              <option value="10">Gym</option>
-              <option value="11">B1</option>
-              <option value="12">B2</option>
-              <option value="13">B3</option>
-              <option value="14">B4</option>
-              <option value="15">B5</option>
-              <option value="16">B6</option>
-              <option value="17">B7</option>
-              <option value="18">B8</option>
-              <option value="19">G1</option>
-              <option value="20">G2</option>
-              <option value="21">G3</option>
-              <option value="22">G4</option>
-              <option value="23">G5</option>
-              <option value="24">Cricket Ground</option>
-            </select>
+            <div className="w-full">
+              <SearchBar
+                onLocationSelect={(s: any) => setEndId(s.id)}
+                placeholder="To: Search a destination"
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -312,6 +263,8 @@ const Campus: React.FC = () => {
           </div>
         </div>
       )}
+
+      <Footer />
     </div>
   );
 };
