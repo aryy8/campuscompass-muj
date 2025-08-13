@@ -1,12 +1,12 @@
 #  UniWay – MUJ Campus Navigation Web App
 
-## 📌 Overview
+##  Overview
 **UniWay** is a responsive, student-centric campus navigation platform for **Manipal University Jaipur (MUJ)**.  
 It helps students, parents, and visitors easily find locations, plan routes, explore events, and access essential campus services — all in one place.
 
 ---
 
-## ✨ Features
+## Features
 
 ### 🏠 Landing Page
 - Clean, minimal design with UniWay logo.
@@ -102,5 +102,5 @@ improving accessibility, safety, and convenience at MUJ.
 
 ---
 
-## 🏷 Tagline
+
 **Find your way — the UniWay way.**
