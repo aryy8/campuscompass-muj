@@ -95,6 +95,53 @@ It helps students, parents, and visitors easily find locations, plan routes, exp
 - **Animations:** Smooth transitions for filters, search results, and route drawing
 
 ---
+## 🏗️ Project Structure
+
+```
+src/
+├── components/
+│   └── campus/
+│       ├── GoogleMapsCampus.tsx    # Main Google Maps component
+│       ├── SearchBar.tsx           # Location search functionality
+│       └── CategoryGrid.tsx        # Category filtering
+├── pages/
+│   ├── Campus.tsx                  # Main campus exploration page
+│   └── Index.tsx                   # Landing page
+├── lib/
+│   ├── campus-data.ts              # Campus location data
+│   └── shortest-path.ts            # (Legacy) Pathfinding
+├── types/
+│   └── google-maps.d.ts            # Google Maps TypeScript definitions
+└── assets/                         # Images and static assets
+```
+
+---
+
+## 🛠️ Setup & Installation
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/yourusername/campuscompass-muj.git
+cd campuscompass-muj
+```
+
+### 2. Install Dependencies
+```bash
+npm install
+```
+
+### 3. Google Maps API Key
+- Obtain a Google Maps JavaScript API key ([instructions](GOOGLE_MAPS_SETUP.md)).
+- Replace the API key in `src/pages/Campus.tsx`:
+  ```typescript
+  script.src = `https://maps.googleapis.com/maps/api/js?key=YOUR_ACTUAL_API_KEY&libraries=places`;
+  ```
+
+### 4. Start the Development Server
+```bash
+npm run dev
+```
+Visit [http://localhost:5173](http://localhost:5173) in your browser.
 
 ## 🎯 Goal
 To make campus navigation seamless, engaging, and student-focused —  
