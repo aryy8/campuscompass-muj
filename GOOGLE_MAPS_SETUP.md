@@ -20,12 +20,14 @@ This campus navigation system now uses Google Maps JavaScript API to provide:
 4. Create credentials (API Key)
 5. Restrict the API key to your domain for security
 
-### 2. Update API Key
-Replace `YOUR_API_KEY_HERE` in `src/pages/Campus.tsx`:
+### 2. Add API Key to .env
+Create a `.env` file in the project root and add:
 
-```typescript
-script.src = `https://maps.googleapis.com/maps/api/js?key=YOUR_ACTUAL_API_KEY&libraries=places`;
+```bash
+VITE_GOOGLE_MAPS_API_KEY=YOUR_ACTUAL_API_KEY
 ```
+
+The app will read it at runtime using `import.meta.env.VITE_GOOGLE_MAPS_API_KEY`. Ensure the key is restricted in Google Cloud (HTTP referrers) and never committed to git.
 
 ### 3. Configure API Key Restrictions
 In Google Cloud Console:

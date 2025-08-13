@@ -117,106 +117,106 @@ const campusLocations: CampusLocation[] = [
   {
     id: '11',
     name: 'B1',
-    category: 'academic',
+    category: 'hostels',
     coordinates: { lat: 26.841461, lng: 75.562827 },
     status: 'open',
-    description: 'Academic building B1 with classrooms and labs'
+    description: 'Hostel block B1'
   },
   {
     id: '12',
     name: 'B2',
-    category: 'academic',
+    category: 'hostels',
     coordinates: { lat: 26.841565, lng: 75.562756 },
     status: 'open',
-    description: 'Academic building B2 with lecture halls'
+    description: 'Hostel block B2'
   },
   {
     id: '13',
     name: 'B3',
-    category: 'academic',
+    category: 'hostels',
     coordinates: { lat: 26.841792, lng: 75.562706 },
     status: 'open',
-    description: 'Academic building B3 with research facilities'
+    description: 'Hostel block B3'
   },
   {
     id: '14',
     name: 'B4',
-    category: 'academic',
+    category: 'hostels',
     coordinates: { lat: 26.841401, lng: 75.562684 },
     status: 'open',
-    description: 'Academic building B4 with computer labs'
+    description: 'Hostel block B4'
   },
   {
     id: '15',
     name: 'B5',
-    category: 'academic',
+    category: 'hostels',
     coordinates: { lat: 26.841476, lng: 75.562622 },
     status: 'open',
-    description: 'Academic building B5 with engineering labs'
+    description: 'Hostel block B5'
   },
   {
     id: '16',
     name: 'B6',
-    category: 'academic',
+    category: 'hostels',
     coordinates: { lat: 26.841360, lng: 75.562576 },
     status: 'open',
-    description: 'Academic building B6 with seminar rooms'
+    description: 'Hostel block B6'
   },
   {
     id: '17',
     name: 'B7',
-    category: 'academic',
+    category: 'hostels',
     coordinates: { lat: 26.841332, lng: 75.562490 },
     status: 'open',
-    description: 'Academic building B7 with conference facilities'
+    description: 'Hostel block B7'
   },
   {
     id: '18',
     name: 'B8',
-    category: 'academic',
+    category: 'hostels',
     coordinates: { lat: 26.841315, lng: 75.561746 },
     status: 'open',
-    description: 'Academic building B8 with advanced facilities'
+    description: 'Hostel block B8'
   },
   {
     id: '19',
     name: 'G1',
-    category: 'academic',
+    category: 'hostels',
     coordinates: { lat: 26.840927, lng: 75.563042 },
     status: 'open',
-    description: 'Academic building G1 with modern facilities'
+    description: 'Hostel block G1'
   },
   {
     id: '20',
     name: 'G2',
-    category: 'academic',
+    category: 'hostels',
     coordinates: { lat: 26.840879, lng: 75.562884 },
     status: 'open',
-    description: 'Academic building G2 with research labs'
+    description: 'Hostel block G2'
   },
   {
     id: '21',
     name: 'G3',
-    category: 'academic',
+    category: 'hostels',
     coordinates: { lat: 26.840819, lng: 75.562814 },
     status: 'open',
-    description: 'Academic building G3 with lecture halls'
+    description: 'Hostel block G3'
   },
   {
     id: '22',
     name: 'G4',
-    category: 'academic',
+    category: 'hostels',
     coordinates: { lat: 26.840616, lng: 75.562636 },
     status: 'open',
-    description: 'Academic building G4 with computer facilities'
+    description: 'Hostel block G4'
   },
   {
     id: '23',
     name: 'G5',
-    category: 'academic',
+    category: 'hostels',
     coordinates: { lat: 26.840484, lng: 75.562679 },
     status: 'open',
-    description: 'Academic building G5 with engineering labs'
+    description: 'Hostel block G5'
   },
   {
     id: '24',

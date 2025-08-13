@@ -178,7 +178,7 @@ const Index = () => {
           
           {/* Enhanced Sub-Tagline */}
           <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto animate-fade-in font-light tracking-wide leading-relaxed" style={{ animationDelay: '0.6s' }}>
-            MUJ! Mapped for You.
+            
           </p>
 
           {/* Enhanced Hero Search with Glassmorphism */}

@@ -28,7 +28,12 @@ const Campus: React.FC = () => {
       }
 
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyDboUSRvu5PJ81W1J-e2Zl4Z7gwxV-L0ZM&libraries=places`;
+      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+      if (!apiKey) {
+        console.error('Missing Google Maps API key. Please set VITE_GOOGLE_MAPS_API_KEY in your .env file.');
+        return;
+      }
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
       script.async = true;
       script.defer = true;
       script.onload = () => setIsGoogleMapsLoaded(true);

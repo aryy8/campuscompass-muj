@@ -132,10 +132,11 @@ npm install
 
 ### 3. Google Maps API Key
 - Obtain a Google Maps JavaScript API key ([instructions](GOOGLE_MAPS_SETUP.md)).
-- Replace the API key in `src/pages/Campus.tsx`:
-  ```typescript
-  script.src = `https://maps.googleapis.com/maps/api/js?key=YOUR_ACTUAL_API_KEY&libraries=places`;
+- Create a `.env` file in the project root and add:
+  ```bash
+  VITE_GOOGLE_MAPS_API_KEY=YOUR_ACTUAL_API_KEY
   ```
+  Vite automatically exposes variables prefixed with `VITE_` to the client. The app reads this value via `import.meta.env.VITE_GOOGLE_MAPS_API_KEY`.
 
 ### 4. Start the Development Server
 ```bash

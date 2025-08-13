@@ -7,21 +7,21 @@ export type LocationLabel = {
 // Keep this in sync with map markers in GoogleMapsCampus.tsx
 export const locationLabels: LocationLabel[] = [
   // B-blocks
-  { id: '11', name: 'B1', category: 'Academic' },
-  { id: '12', name: 'B2', category: 'Academic' },
-  { id: '13', name: 'B3', category: 'Academic' },
-  { id: '14', name: 'B4', category: 'Academic' },
-  { id: '15', name: 'B5', category: 'Academic' },
-  { id: '16', name: 'B6', category: 'Academic' },
-  { id: '17', name: 'B7', category: 'Academic' },
-  { id: '18', name: 'B8', category: 'Academic' },
+  { id: '11', name: 'B1', category: 'Hostels' },
+  { id: '12', name: 'B2', category: 'Hostels' },
+  { id: '13', name: 'B3', category: 'Hostels' },
+  { id: '14', name: 'B4', category: 'Hostels' },
+  { id: '15', name: 'B5', category: 'Hostels' },
+  { id: '16', name: 'B6', category: 'Hostels' },
+  { id: '17', name: 'B7', category: 'Hostels' },
+  { id: '18', name: 'B8', category: 'Hostels' },
 
   // G-blocks
-  { id: '19', name: 'G1', category: 'Academic' },
-  { id: '20', name: 'G2', category: 'Academic' },
-  { id: '21', name: 'G3', category: 'Academic' },
-  { id: '22', name: 'G4', category: 'Academic' },
-  { id: '23', name: 'G5', category: 'Academic' },
+  { id: '19', name: 'G1', category: 'Hostels' },
+  { id: '20', name: 'G2', category: 'Hostels' },
+  { id: '21', name: 'G3', category: 'Hostels' },
+  { id: '22', name: 'G4', category: 'Hostels' },
+  { id: '23', name: 'G5', category: 'Hostels' },
 
   // Recreation
   { id: '24', name: 'Cricket Ground', category: 'Recreation' },
