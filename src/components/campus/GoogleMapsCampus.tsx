@@ -1,24 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MapPin, Navigation, Info } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { calculateTimeBetweenLocations, type Location as TimeLocation } from '@/lib/time-calculator';
 
 // Google Maps types
 declare global {
   interface Window {
     google: typeof google;
-    routeInfo: {
-      distance: string;
-      duration: string;
-      steps: google.maps.DirectionsStep[];
-    };
   }
 }
 
 interface GoogleMapsCampusProps {
-  startLocationId?: string;
-  endLocationId?: string;
   onLocationSelect?: (location: CampusLocation) => void;
   selectedLocation?: string;
 }
@@ -398,20 +390,23 @@ const categoryColors = {
 } as const;
 
 const GoogleMapsCampus: React.FC<GoogleMapsCampusProps> = ({
-  startLocationId,
-  endLocationId,
   onLocationSelect,
   selectedLocation
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
-  const directionsServiceRef = useRef<google.maps.DirectionsService | null>(null);
-  const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
+  const placesServiceRef = useRef<any>(null);
+  const streetViewServiceRef = useRef<any>(null);
+  const streetViewPanoramaRef = useRef<any>(null);
+  const streetViewContainerRef = useRef<HTMLDivElement | null>(null);
 
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [currentMapType, setCurrentMapType] = useState<google.maps.MapTypeId>(google.maps.MapTypeId.SATELLITE);
+  const [placeDetailsCache, setPlaceDetailsCache] = useState<Record<string, any>>({});
+  const [streetViewVisible, setStreetViewVisible] = useState(false);
+  const [streetViewAvailable, setStreetViewAvailable] = useState(false);
 
   // Initialize Google Maps
   useEffect(() => {
@@ -440,32 +435,49 @@ const GoogleMapsCampus: React.FC<GoogleMapsCampusProps> = ({
     // Set initial map type state
     setCurrentMapType(google.maps.MapTypeId.SATELLITE);
 
-    // Initialize services
-    directionsServiceRef.current = new window.google.maps.DirectionsService();
-    directionsRendererRef.current = new window.google.maps.DirectionsRenderer({
-      suppressMarkers: true,
-      polylineOptions: {
-        strokeColor: '#1e40af',
-        strokeWeight: 6,
-        strokeOpacity: 0.9,
-        icons: [{
-          icon: {
-            path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-            scale: 4,
-            strokeColor: '#1e40af',
-            fillColor: '#1e40af'
-          },
-          offset: '50%',
-          repeat: '100px'
-        }]
-      }
-    });
-
-    console.log('Directions renderer created:', directionsRendererRef.current);
-    directionsRendererRef.current.setMap(mapInstance.current);
-
     // Create info window
     infoWindowRef.current = new window.google.maps.InfoWindow();
+
+    // Init PlacesService (guard if Places library not present)
+    try {
+      const g: any = window.google;
+      if (g?.maps?.places?.PlacesService && mapInstance.current) {
+        placesServiceRef.current = new g.maps.places.PlacesService(mapInstance.current);
+      } else {
+        placesServiceRef.current = null;
+        console.warn('Google Places library not available or rate-limited. Skipping PlacesService init.');
+      }
+    } catch (e) {
+      placesServiceRef.current = null;
+      console.warn('Failed to init PlacesService:', e);
+    }
+
+    // Init Street View Service and Panorama (hidden by default) with guards
+    try {
+      const g: any = window.google;
+      if (g?.maps?.StreetViewService) {
+        streetViewServiceRef.current = new g.maps.StreetViewService();
+      } else {
+        streetViewServiceRef.current = null;
+      }
+      if (streetViewContainerRef.current && g?.maps?.StreetViewPanorama) {
+        streetViewPanoramaRef.current = new g.maps.StreetViewPanorama(
+          streetViewContainerRef.current,
+          {
+            pov: { heading: 0, pitch: 0 },
+            zoom: 1,
+            addressControl: true,
+            fullscreenControl: true,
+            motionTracking: false,
+            visible: false,
+          }
+        );
+      }
+    } catch (e) {
+      streetViewServiceRef.current = null;
+      streetViewPanoramaRef.current = null;
+      console.warn('Failed to init Street View:', e);
+    }
 
     setIsMapLoaded(true);
   }, []);
@@ -529,118 +541,7 @@ const GoogleMapsCampus: React.FC<GoogleMapsCampusProps> = ({
     });
   }, [isMapLoaded, onLocationSelect]);
 
-  // Enhanced time calculation using the new utility
-  const calculateEnhancedTime = (startLoc: CampusLocation, endLoc: CampusLocation) => {
-    const timeLocation: TimeLocation = {
-      id: startLoc.id,
-      name: startLoc.name,
-      coordinates: startLoc.coordinates,
-      category: startLoc.category,
-      status: startLoc.status
-    };
-    
-    const endTimeLocation: TimeLocation = {
-      id: endLoc.id,
-      name: endLoc.name,
-      coordinates: endLoc.coordinates,
-      category: endLoc.category,
-      status: endLoc.status
-    };
-    
-    return calculateTimeBetweenLocations(timeLocation, endTimeLocation);
-  };
-
-  // Handle directions
-  useEffect(() => {
-    console.log('Directions effect triggered:', { startLocationId, endLocationId });
-    
-    if (!startLocationId || !endLocationId) {
-      console.log('No start or end location selected');
-      return;
-    }
-
-    const startLocation = campusLocations.find(loc => loc.id === startLocationId);
-    const endLocation = campusLocations.find(loc => loc.id === endLocationId);
-
-    if (!startLocation || !endLocation) {
-      console.log('Could not find start or end location');
-      return;
-    }
-
-    console.log('Calculating route from', startLocation.name, 'to', endLocation.name);
-    console.log('Start coordinates:', startLocation.coordinates);
-    console.log('End coordinates:', endLocation.coordinates);
-
-    // Calculate enhanced time information
-    const timeCalculation = calculateEnhancedTime(startLocation, endLocation);
-
-    // Store route info for display
-    window.routeInfo = {
-      distance: timeCalculation.formattedDistance,
-      duration: timeCalculation.formattedWalkingTime,
-      steps: []
-    };
-
-    // Clear any existing directions
-    if (directionsRendererRef.current) {
-      directionsRendererRef.current.setDirections({ routes: [] });
-    }
-
-    // Create a custom route path since coordinates are close
-    const routePath = [
-      startLocation.coordinates,
-      endLocation.coordinates
-    ];
-
-    // Calculate midpoint for a curved path
-    const midLat = (startLocation.coordinates.lat + endLocation.coordinates.lat) / 2;
-    const midLng = (startLocation.coordinates.lng + endLocation.coordinates.lng) / 2;
-    
-    // Add a slight curve to make the route more visible
-    const curveOffset = 0.0001; // Small offset for visibility
-    const curvedPath = [
-      startLocation.coordinates,
-      { lat: midLat + curveOffset, lng: midLng + curveOffset },
-      endLocation.coordinates
-    ];
-
-    // Create a custom polyline for the route
-    if (mapInstance.current) {
-      // Remove existing route lines
-      const existingLines = document.querySelectorAll('.custom-route-line');
-      existingLines.forEach(line => line.remove());
-
-      // Create new route line
-      const routeLine = new window.google.maps.Polyline({
-        path: curvedPath,
-        geodesic: true,
-        strokeColor: '#1e40af',
-        strokeOpacity: 0.9,
-        strokeWeight: 6,
-        icons: [{
-          icon: {
-            path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-            scale: 4,
-            strokeColor: '#1e40af',
-            fillColor: '#1e40af'
-          },
-          offset: '50%',
-          repeat: '100px'
-        }]
-      });
-
-      routeLine.setMap(mapInstance.current);
-      routeLine.set('class', 'custom-route-line');
-
-      // Fit map to show entire route
-      const bounds = new google.maps.LatLngBounds();
-      bounds.extend(startLocation.coordinates);
-      bounds.extend(endLocation.coordinates);
-      mapInstance.current.fitBounds(bounds);
-
-      console.log('Custom route line created and displayed');
-    }
-  }, [startLocationId, endLocationId]);
+  // All routing logic removed — OSRM handles navigation externally
 
   // Highlight selected location
   useEffect(() => {
@@ -652,6 +553,97 @@ const GoogleMapsCampus: React.FC<GoogleMapsCampusProps> = ({
       mapInstance.current.setZoom(18);
     }
   }, [selectedLocation]);
+
+  // Fetch Google Places details for selected location using Places API (New)
+  useEffect(() => {
+    const fetchNewPlaces = async () => {
+      if (!selectedLocation) return;
+      if (placeDetailsCache[selectedLocation]) return;
+      const loc = campusLocations.find(l => l.id === selectedLocation);
+      if (!loc) return;
+
+      const apiKey = (import.meta as any)?.env?.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
+      if (!apiKey) return;
+
+      try {
+        // Text Search (New)
+        const resp = await fetch('https://places.googleapis.com/v1/places:searchText', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': apiKey,
+            'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.location,places.photos'
+          },
+          body: JSON.stringify({
+            textQuery: `${loc.name} Manipal University Jaipur`,
+            locationBias: {
+              circle: {
+                center: { latitude: loc.coordinates.lat, longitude: loc.coordinates.lng },
+                radius: 2000
+              }
+            }
+          })
+        });
+        const data = await resp.json();
+        const place = data?.places?.[0];
+        if (!place) return;
+
+        // Prepare a normalized details object compatible with UI
+        let photoUrl: string | null = null;
+        const photoName = place.photos?.[0]?.name; // e.g., "places/XYZ/photos/ABC"
+        if (photoName) {
+          const u = new URL(`https://places.googleapis.com/v1/${photoName}/media`);
+          u.searchParams.set('maxWidthPx', '400');
+          u.searchParams.set('maxHeightPx', '200');
+          u.searchParams.set('key', apiKey);
+          photoUrl = u.toString();
+        }
+
+        const normalized = {
+          // Legacy-compatible fields used by rendering code
+          name: place.displayName?.text || loc.name,
+          rating: place.rating,
+          user_ratings_total: place.userRatingCount,
+          formatted_address: place.formattedAddress,
+          // Provide photoUrl directly for the UI
+          __photoUrl: photoUrl,
+          // Keep raw in case we expand later
+          __raw: place,
+        } as any;
+
+        setPlaceDetailsCache(prev => ({ ...prev, [selectedLocation]: normalized }));
+      } catch (e) {
+        // Silently ignore to avoid UI noise
+        console.warn('Places API (New) fetch failed', e);
+      }
+    };
+
+    fetchNewPlaces();
+  }, [selectedLocation, placeDetailsCache]);
+
+  // Find and prepare Street View for selected location
+  useEffect(() => {
+    if (!selectedLocation || !streetViewServiceRef.current || !mapInstance.current) return;
+    const loc = campusLocations.find(l => l.id === selectedLocation);
+    if (!loc) return;
+
+    const sv = streetViewServiceRef.current as any;
+    sv.getPanorama({ location: loc.coordinates, radius: 70 }, (data: any, status: any) => {
+      const ok = status === (window.google as any).maps.StreetViewStatus.OK && data;
+      setStreetViewAvailable(!!ok);
+      if (ok && streetViewPanoramaRef.current) {
+        streetViewPanoramaRef.current.setPano(data.location.pano);
+        streetViewPanoramaRef.current.setPov({ heading: 0, pitch: 0 });
+        if (streetViewVisible) {
+          streetViewPanoramaRef.current.setVisible(true);
+        } else {
+          streetViewPanoramaRef.current.setVisible(false);
+        }
+      } else if (streetViewPanoramaRef.current) {
+        streetViewPanoramaRef.current.setVisible(false);
+      }
+    });
+  }, [selectedLocation, streetViewVisible]);
 
   return (
     <div className="relative w-full h-full rounded-xl overflow-hidden border-2 border-border shadow-lg">
@@ -673,7 +665,7 @@ const GoogleMapsCampus: React.FC<GoogleMapsCampusProps> = ({
             className="h-8 w-8"
             title="Reset View"
           >
-            <Navigation className="h-4 w-4" />
+            <MapPin className="h-4 w-4" />
           </Button>
         </div>
         
@@ -705,52 +697,89 @@ const GoogleMapsCampus: React.FC<GoogleMapsCampusProps> = ({
             )}
           </Button>
         </div>
+
+        {/* Street View Toggle */}
+        <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg p-1 shadow-lg">
+          <Button
+            variant={streetViewVisible ? 'default' : 'ghost'}
+            size="sm"
+            disabled={!streetViewAvailable}
+            onClick={() => {
+              const next = !streetViewVisible;
+              setStreetViewVisible(next);
+              if (streetViewPanoramaRef.current) {
+                streetViewPanoramaRef.current.setVisible(next && streetViewAvailable);
+              }
+            }}
+            className="h-8 px-2 text-xs"
+            title={streetViewAvailable ? 'Toggle Street View' : 'Street View not available here'}
+          >
+            SV
+          </Button>
+        </div>
       </div>
 
-      {/* Directions Info Panel */}
-      {startLocationId && endLocationId && (
+      {/* Place Details Panel (search-focused) */}
+      {selectedLocation && (
         <div className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg p-4 shadow-lg max-w-sm">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="font-medium text-sm flex items-center gap-2 text-blue-600">
-              <Navigation className="h-4 w-4" />
-              Route Information
-            </h4>
-            <Badge 
-              variant="outline" 
-              className={`text-xs ${
-                currentMapType === google.maps.MapTypeId.SATELLITE 
-                  ? 'bg-green-100 text-green-800 border-green-200' 
-                  : 'bg-blue-100 text-blue-800 border-blue-200'
-              }`}
-            >
-              {currentMapType === google.maps.MapTypeId.SATELLITE ? 'Satellite' : 'Road'}
-            </Badge>
-          </div>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">From:</span>
-              <span className="font-medium">{campusLocations.find(l => l.id === startLocationId)?.name}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">To:</span>
-              <span className="font-medium">{campusLocations.find(l => l.id === endLocationId)?.name}</span>
-            </div>
-            <div className="border-t border-gray-200 pt-2 mt-2">
-              <div className="flex justify-between items-center text-blue-600">
-                <span>Distance:</span>
-                <span className="font-medium">{window.routeInfo?.distance || 'Calculating...'}</span>
+          {(() => {
+            const loc = campusLocations.find(l => l.id === selectedLocation);
+            if (!loc) return null as any;
+            const details = placeDetailsCache[selectedLocation];
+            const photoUrl = details?.__photoUrl || (details?.photos?.[0]?.getUrl ? details.photos[0].getUrl({ maxWidth: 400, maxHeight: 200 }) : null);
+            return (
+              <div>
+                {photoUrl && (
+                  <div className="mb-3 overflow-hidden rounded-md">
+                    <img src={photoUrl} alt={loc.name} className="w-full h-32 object-cover" />
+                  </div>
+                )}
+                <div className="mb-2">
+                  <h4 className="font-semibold text-lg">{loc.name}</h4>
+                  <div className="text-xs text-muted-foreground capitalize">{loc.category}</div>
+                </div>
+                {details && (
+                  <div className="flex items-center gap-2 text-sm mb-2">
+                    <span className="font-medium">{details.rating?.toFixed?.(1) ?? '—'}</span>
+                    <span className="text-yellow-500">{'★'.repeat(Math.round(details.rating || 0))}</span>
+                    <span className="text-xs text-muted-foreground">({details.user_ratings_total ?? 0})</span>
+                  </div>
+                )}
+                {loc.description && (
+                  <p className="text-sm text-gray-700 mb-3">{loc.description}</p>
+                )}
+                {details?.formatted_address && (
+                  <p className="text-xs text-muted-foreground mb-3">{details.formatted_address}</p>
+                )}
+                <div className="flex items-center gap-2 mb-3">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    loc.status === 'open' ? 'bg-green-100 text-green-800' :
+                    loc.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>{loc.status}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <Button variant="secondary" size="sm" onClick={() => {
+                    // Center and drop bounce to highlight
+                    if (mapInstance.current) {
+                      mapInstance.current.panTo(loc.coordinates);
+                      mapInstance.current.setZoom(18);
+                    }
+                  }}>Center here</Button>
+                  <Button variant="outline" size="sm" onClick={() => {
+                    navigator.clipboard.writeText(`${loc.coordinates.lat}, ${loc.coordinates.lng}`);
+                  }}>Copy coords</Button>
+                </div>
+                {details?.url && (
+                  <div className="mt-2">
+                    <a href={details.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">
+                      View on Google Maps
+                    </a>
+                  </div>
+                )}
               </div>
-              <div className="flex justify-between items-center text-blue-600">
-                <span>Walking:</span>
-                <span className="font-medium">{window.routeInfo?.duration || 'Calculating...'}</span>
-              </div>
-              <div className="mt-2 text-xs text-gray-500">
-                <p>• Blue line shows the walking path</p>
-                <p>• Arrows indicate direction of travel</p>
-                <p>• Check sidebar for detailed time options</p>
-              </div>
-            </div>
-          </div>
+            );
+          })()}
         </div>
       )}
 

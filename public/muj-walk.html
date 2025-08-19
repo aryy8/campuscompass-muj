@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MUJ Walking Map</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css"
+  />
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #app { display: grid; grid-template-columns: 320px 1fr; height: 100%; }
+    #sidebar { padding: 12px; border-right: 1px solid #e5e7eb; overflow: auto; }
+    #map { height: 100%; width: 100%; }
+    .poi-item { display: flex; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
+    .poi-item:hover { background: #f3f4f6; }
+    .poi-icon { width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; }
+    .metrics { margin-top: 8px; font-weight: 600; }
+    .section-title { margin: 12px 0 6px; font-weight: 700; }
+    .legend { display: flex; gap: 6px; flex-wrap: wrap; }
+    .legend .tag { display: inline-flex; gap: 6px; align-items: center; padding: 4px 8px; border-radius: 999px; background: #f3f4f6; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar">
+      <div>
+        <h2 style="margin:0">MUJ Walking</h2>
+        <div style="color:#6b7280; font-size: 13px;">Select a destination to start walking navigation.</div>
+      </div>
+
+      <div class="section-title">OSRM Router</div>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <input id="osrm-url" type="text" placeholder="https://router.project-osrm.org/route/v1" style="flex:1; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px;" />
+        <button id="osrm-save" style="padding:6px 10px; border:1px solid #e5e7eb; border-radius:8px; background:#fff; cursor:pointer;">Save</button>
+      </div>
+      <div style="color:#6b7280; font-size:12px; margin-top:6px;">Built with foot.lua recommended. CORS must allow this origin.</div>
+
+      <div class="section-title">Load OSRM Map URL</div>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <input id="osrm-map-url" type="text" placeholder="Paste https://map.project-osrm.org/?..." style="flex:1; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px;" />
+        <button id="osrm-load" style="padding:6px 10px; border:1px solid #e5e7eb; border-radius:8px; background:#fff; cursor:pointer;">Load</button>
+      </div>
+
+      <div class="section-title">Legend</div>
+      <div class="legend" id="legend"></div>
+
+      <div class="section-title">Destinations</div>
+      <div id="poi-list"></div>
+
+      <div class="section-title">Route</div>
+      <div class="metrics" id="metrics">No route yet</div>
+      <div id="instructions"></div>
+    </aside>
+    <div id="map"></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
+
+  <script>
+    // Campus center
+    const MUJ_CENTER = [26.8429, 75.5654];
+    const SUBWAY = [26.841583, 75.563417];
+
+    // Categories and simple emoji icons
+    const CATEGORIES = {
+      academic: { name: 'Academic', icon: '🏫' },
+      library: { name: 'Library', icon: '📚' },
+      hostel: { name: 'Hostel', icon: '🏠' },
+      food: { name: 'Food', icon: '🍽️' },
+      sports: { name: 'Sports', icon: '⚽' },
+      admin: { name: 'Admin', icon: '🏢' },
+      other: { name: 'Other', icon: '📍' },
+    };
+
+    // Sample POIs for MUJ (replace/expand as needed)
+    const pois = [
+      { name: 'Main Building', lat: 26.8429, lng: 75.5654, type: 'academic' },
+      { name: 'Central Library', lat: 26.8433, lng: 75.5659, type: 'library' },
+      { name: 'Auditorium', lat: 26.8425, lng: 75.5648, type: 'academic' },
+      { name: 'Admin Office', lat: 26.8427, lng: 75.5650, type: 'admin' },
+      { name: 'Food Court', lat: 26.8432, lng: 75.5662, type: 'food' },
+      { name: 'Cafeteria', lat: 26.8422, lng: 75.5658, type: 'food' },
+      { name: 'Sports Complex', lat: 26.8419, lng: 75.5649, type: 'sports' },
+      { name: 'Boys Hostel A', lat: 26.8440, lng: 75.5670, type: 'hostel' },
+      { name: 'Boys Hostel B', lat: 26.8443, lng: 75.5665, type: 'hostel' },
+      { name: 'Girls Hostel A', lat: 26.8420, lng: 75.5672, type: 'hostel' },
+      { name: 'Girls Hostel B', lat: 26.8417, lng: 75.5667, type: 'hostel' },
+    ];
+
+    // Simple haversine to compare lengths (meters)
+    function haversine(a, b) {
+      const toRad = n => (n * Math.PI) / 180;
+      const R = 6371000;
+      const dLat = toRad(b[0] - a[0]);
+      const dLon = toRad(b[1] - a[1]);
+      const lat1 = toRad(a[0]);
+      const lat2 = toRad(b[0]);
+      const s = Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
+      const c = 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1-s));
+      return R * c;
+    }
+
+    // Setup map
+    const map = L.map('map').setView(MUJ_CENTER, 16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Geolocation marker
+    let userMarker = null;
+    let accuracyCircle = null;
+    let userLatLng = null;
+
+    if ('geolocation' in navigator) {
+      navigator.geolocation.watchPosition((pos) => {
+        const { latitude, longitude, accuracy } = pos.coords;
+        userLatLng = [latitude, longitude];
+        if (!userMarker) {
+          userMarker = L.circleMarker(userLatLng, { radius: 6, color: '#2563eb', fillColor: '#2563eb', fillOpacity: 1 }).addTo(map);
+          accuracyCircle = L.circle(userLatLng, { radius: Math.min(accuracy || 50, 60), color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.15, opacity: 0.3 }).addTo(map);
+        } else {
+          userMarker.setLatLng(userLatLng);
+          accuracyCircle.setLatLng(userLatLng).setRadius(Math.min(accuracy || 50, 60));
+        }
+      }, console.warn, { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 });
+    }
+
+    // Icons for POIs
+    function iconHTML(type) {
+      const icon = (CATEGORIES[type] && CATEGORIES[type].icon) || '📍';
+      return L.divIcon({
+        className: 'poi-marker',
+        html: `<div style="font-size:22px; line-height:22px;">${icon}</div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 24],
+      });
+    }
+
+    // Add POIs
+    const poiListEl = document.getElementById('poi-list');
+    const legendEl = document.getElementById('legend');
+    const instructionsEl = document.getElementById('instructions');
+    const metricsEl = document.getElementById('metrics');
+
+    // Legend
+    Object.entries(CATEGORIES).forEach(([key, val]) => {
+      const tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.innerHTML = `<span class="poi-icon">${val.icon}</span> ${val.name}`;
+      legendEl.appendChild(tag);
+    });
+
+    // Markers + list
+    pois.forEach((p) => {
+      const m = L.marker([p.lat, p.lng], { icon: iconHTML(p.type) }).addTo(map);
+      m.bindPopup(`<strong>${p.name}</strong><br/>${p.type}`);
+
+      const row = document.createElement('div');
+      row.className = 'poi-item';
+      row.innerHTML = `<span class="poi-icon">${iconFor(p.type)}</span> <span>${p.name}</span>`;
+      row.addEventListener('click', () => startRoutingTo([p.lat, p.lng], p.name));
+      poiListEl.appendChild(row);
+    });
+
+    function iconFor(type){ return (CATEGORIES[type] && CATEGORIES[type].icon) || '📍'; }
+
+    // OSRM endpoint configuration (persisted)
+    const defaultOsrm = 'https://router.project-osrm.org/route/v1';
+    const osrmInput = document.getElementById('osrm-url');
+    const savedOsrm = localStorage.getItem('osrm_url') || defaultOsrm;
+    osrmInput.value = savedOsrm;
+    document.getElementById('osrm-save').addEventListener('click', () => {
+      const url = osrmInput.value.trim();
+      if (!url) return;
+      localStorage.setItem('osrm_url', url);
+      // Recreate router with new URL
+      router = L.Routing.osrmv1({ serviceUrl: url, profile: 'foot', timeout: 25*1000, useHints: false });
+      routingControl.getPlan().setRouter(router);
+      alert('OSRM URL saved. New routes will use this endpoint.');
+    });
+
+    // Leaflet Routing Machine: OSRM (foot)
+    let router = L.Routing.osrmv1({
+      serviceUrl: savedOsrm,
+      profile: 'foot',
+      timeout: 25 * 1000,
+      useHints: false,
+    });
+
+    let routingControl = L.Routing.control({
+      waypoints: [],
+      router,
+      fitSelectedRoutes: true,
+      addWaypoints: false,
+      draggableWaypoints: false,
+      show: false,
+      routeWhileDragging: false,
+      lineOptions: { styles: [{ color: '#2563eb', opacity: 0.9, weight: 6 }] },
+      createMarker: (i, wp) => {
+        // 0=start (user), 1=dest
+        if (!wp || !wp.latLng) return null;
+        const color = i === 0 ? '#10b981' : '#ef4444';
+        return L.circleMarker(wp.latLng, { radius: 7, color, fillColor: color, fillOpacity: 1 });
+      },
+    }).addTo(map);
+
+    routingControl.on('routesfound', e => {
+      const route = (e.routes || [])[0];
+      if (!route) { metricsEl.textContent = 'No route yet'; instructionsEl.innerHTML = ''; return; }
+      // Metrics
+      const totalMeters = Math.round(route.summary.totalDistance);
+      const totalTimeMin = Math.round(route.summary.totalTime / 60);
+      metricsEl.textContent = `Distance: ${totalMeters} m • ETA: ${totalTimeMin} min`;
+      // Instructions
+      instructionsEl.innerHTML = '';
+      const ol = document.createElement('ol');
+      ol.style.paddingLeft = '18px';
+      (route.instructions || []).forEach((it) => {
+        const li = document.createElement('li');
+        li.textContent = it.text || it.description || '';
+        ol.appendChild(li);
+      });
+      instructionsEl.appendChild(ol);
+    });
+
+    function routeSummaryDistance(route) {
+      return route && route.summary ? route.summary.totalDistance : Number.POSITIVE_INFINITY;
+    }
+
+    function startRoutingTo(destLatLng, destName) {
+      if (!userLatLng) {
+        alert('Location not available yet. Please enable location.');
+        return;
+      }
+      routingControl.setWaypoints([
+        L.latLng(userLatLng[0], userLatLng[1]),
+        L.latLng(destLatLng[0], destLatLng[1])
+      ]);
+    }
+
+    // Center map on first geolocation fix for better UX
+    let hasCenteredOnUser = false;
+    if ('geolocation' in navigator) {
+      navigator.geolocation.watchPosition((pos) => {
+        if (!hasCenteredOnUser) {
+          hasCenteredOnUser = true;
+          map.setView([pos.coords.latitude, pos.coords.longitude], 17);
+        }
+      });
+    }
+
+    // Support loading OSRM demo map URLs
+    function parseOsrmMapUrl(urlStr){
+      try {
+        const u = new URL(urlStr);
+        const locs = u.searchParams.getAll('loc');
+        if (locs.length < 2) return null;
+        const p = locs.map(s => s.split(',').map(Number));
+        // OSRM map uses loc=lat,lon in this URL (as seen), convert to [lat, lon]
+        const waypoints = p.map(([lat, lon]) => [lat, lon]);
+        return waypoints;
+      } catch { return null; }
+    }
+
+    const osrmMapInput = document.getElementById('osrm-map-url');
+    document.getElementById('osrm-load').addEventListener('click', () => {
+      const txt = osrmMapInput.value.trim();
+      const wpts = parseOsrmMapUrl(txt);
+      if (!wpts || wpts.length < 2) { alert('Could not parse loc parameters.'); return; }
+      // If there are 2+ waypoints in the OSRM demo URL, set them as LRM waypoints
+      routingControl.setWaypoints(wpts.map(([lat, lon]) => L.latLng(lat, lon)));
+    });
+
+    // Let users click on the map to pick destination
+    map.on('click', (e) => {
+      const dest = [e.latlng.lat, e.latlng.lng];
+      startRoutingTo(dest, 'Clicked point');
+    });
+  </script>
+</body>
+</html>

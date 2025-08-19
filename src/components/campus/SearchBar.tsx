@@ -42,7 +42,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [recentSearches, setRecentSearches] = useState<SearchSuggestion[]>([]);
+  // Removed recent searches: dropdown only opens on live matches
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -57,14 +57,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   }, []);
 
   useEffect(() => {
-    // Preload a small recent list lazily
-    (async () => {
-      const all = await loadSuggestions();
-      setRecentSearches(all.slice(0, 5));
-      if (!query) {
-        setSuggestions(all.slice(0, 8));
-      }
-    })();
+    // No preload; dropdown is driven only by active query matches
   }, [query]);
 
   const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -80,10 +73,10 @@ const SearchBar: React.FC<SearchBarProps> = ({
         suggestion.category.toLowerCase().includes(value.toLowerCase())
       );
       setSuggestions(filtered);
-      setShowSuggestions(true);
+      setShowSuggestions(filtered.length > 0);
     } else {
-      setSuggestions(recentSearches.length ? recentSearches : all.slice(0, 8));
-      setShowSuggestions(true);
+      setSuggestions([]);
+      setShowSuggestions(false);
     }
   };
 
@@ -118,45 +111,21 @@ const SearchBar: React.FC<SearchBarProps> = ({
           placeholder={placeholder}
           value={query}
           onChange={handleInputChange}
-          onFocus={async () => {
-            const all = await loadSuggestions();
-            setSuggestions(query ? suggestions : (recentSearches.length ? recentSearches : all.slice(0, 8)));
-            setShowSuggestions(true);
-          }}
+          // No onFocus dropdown; only show on matching query
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          inputMode="search"
           className={`pl-12 pr-4 py-3 w-full rounded-xl border-2 transition-all duration-200 focus:border-primary ${
-            variant === 'hero' ? 'h-14 text-lg shadow-medium' : 'h-12'
+            variant === 'hero' 
+              ? 'h-14 text-lg shadow-medium text-black placeholder:text-gray-500 bg-white'
+              : 'h-12'
           }`}
         />
       </div>
 
-      {showSuggestions && (suggestions.length > 0 || recentSearches.length > 0) && (
+      {showSuggestions && suggestions.length > 0 && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-xl shadow-strong z-50 max-h-96 overflow-y-auto">
-          {!query && recentSearches.length > 0 && (
-            <div className="p-3 border-b border-border">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                <Clock className="h-4 w-4" />
-                <span>Recent Searches</span>
-              </div>
-              {recentSearches.map((suggestion) => (
-                <button
-                  key={`recent-${suggestion.id}`}
-                  onClick={() => handleSuggestionClick(suggestion)}
-                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors duration-150 flex items-center gap-3"
-                >
-                  <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-foreground truncate">
-                      {suggestion.fullName || suggestion.name}
-                    </div>
-                    <div className={`text-sm ${getCategoryColor(suggestion.category)}`}>
-                      {suggestion.category}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-
           {query && suggestions.length > 0 && (
             <div className="p-2">
               {suggestions.map((suggestion) => (

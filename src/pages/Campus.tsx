@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Filter, Map as MapIcon, Flag, Navigation as NavIcon } from 'lucide-react';
+import { ArrowLeft, Filter, Map as MapIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SearchBar from '@/components/campus/SearchBar';
 import { CategoryGrid, categories, type Category } from '@/components/campus/CategoryGrid';
 import GoogleMapsCampus, { type CampusLocation } from '@/components/campus/GoogleMapsCampus';
-import TimeCalculator from '@/components/campus/TimeCalculator';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { campusLocations } from '@/lib/campus-data';
 import Footer from '@/components/Footer';
 
 const Campus: React.FC = () => {
@@ -15,9 +13,9 @@ const Campus: React.FC = () => {
   const [selectedLocation, setSelectedLocation] = useState<string>('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
-  const [startId, setStartId] = useState<string>('');
-  const [endId, setEndId] = useState<string>('');
+  // Routing removed; page is now search-focused
   const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
+  const location = useLocation();
 
   // Load Google Maps script
   useEffect(() => {
@@ -43,6 +41,12 @@ const Campus: React.FC = () => {
 
     loadGoogleMaps();
   }, []);
+
+  // Initialize from navigation state (home search -> campus)
+  useEffect(() => {
+    const initial = (location.state as any)?.selectedLocation;
+    if (initial) setSelectedLocation(initial);
+  }, [location.state]);
 
   const handleCategorySelect = (category: Category) => {
     setSelectedCategories(prev => {
@@ -111,27 +115,7 @@ const Campus: React.FC = () => {
       {/* Hero Map Section */}
       <section className="container mx-auto px-4 pt-6">
         <h1 className="text-2xl md:text-3xl font-semibold text-foreground mb-4">Explore Campus</h1>
-        {/* From/To Controls */}
-        <div className="grid md:grid-cols-2 gap-3 mb-6">
-          <div className="flex items-center gap-2">
-            <Flag className="h-4 w-4 text-muted-foreground" />
-            <div className="w-full">
-              <SearchBar
-                onLocationSelect={(s: any) => setStartId(s.id)}
-                placeholder="From: Search a start location"
-              />
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <NavIcon className="h-4 w-4 text-muted-foreground" />
-            <div className="w-full">
-              <SearchBar
-                onLocationSelect={(s: any) => setEndId(s.id)}
-                placeholder="To: Search a destination"
-              />
-            </div>
-          </div>
-        </div>
+        {/* Search only: the main search is in the header. From/To routing removed. */}
       </section>
 
       {/* Filters Panel */}
@@ -165,13 +149,11 @@ const Campus: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Map Section */}
           <div className="lg:col-span-2">
-            <div className="h-[calc(100vh-200px)] min-h-[600px]">
+            <div className="h-[calc(100vh-200px)] min-h[600px]">
               {isGoogleMapsLoaded ? (
                 <GoogleMapsCampus
                   selectedLocation={selectedLocation}
                   onLocationSelect={handleLocationSelect}
-                  startLocationId={startId}
-                  endLocationId={endId}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-muted rounded-xl">
@@ -183,67 +165,9 @@ const Campus: React.FC = () => {
               )}
             </div>
           </div>
-
-          {/* Time Calculator Sidebar - Hidden on mobile, shown on desktop */}
-          <div className="hidden lg:block lg:col-span-1">
-            <div className="sticky top-24 max-h-[calc(100vh-100px)] overflow-y-auto">
-              <TimeCalculator
-                startLocation={(() => {
-                  const loc = campusLocations.find(loc => loc.id === startId);
-                  if (!loc) return null;
-                  return {
-                    id: loc.id,
-                    name: loc.name,
-                    coordinates: { lat: 26.8431 + loc.coordinates.x * 0.0001, lng: 75.5647 + loc.coordinates.y * 0.0001 },
-                    category: loc.category,
-                    status: loc.status
-                  };
-                })()}
-                endLocation={(() => {
-                  const loc = campusLocations.find(loc => loc.id === endId);
-                  if (!loc) return null;
-                  return {
-                    id: loc.id,
-                    name: loc.name,
-                    coordinates: { lat: 26.8431 + loc.coordinates.x * 0.0001, lng: 75.5647 + loc.coordinates.y * 0.0001 },
-                    category: loc.category,
-                    status: loc.status
-                  };
-                })()}
-              />
-            </div>
-          </div>
         </div>
 
-        {/* Mobile Time Calculator - Fixed bottom on mobile */}
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-background border-t border-border">
-          <div className="max-h-96 overflow-y-auto">
-            <TimeCalculator
-              startLocation={(() => {
-                const loc = campusLocations.find(loc => loc.id === startId);
-                if (!loc) return null;
-                return {
-                  id: loc.id,
-                  name: loc.name,
-                  coordinates: { lat: 26.8431 + loc.coordinates.x * 0.0001, lng: 75.5647 + loc.coordinates.y * 0.0001 },
-                  category: loc.category,
-                  status: loc.status
-                };
-              })()}
-              endLocation={(() => {
-                const loc = campusLocations.find(loc => loc.id === endId);
-                if (!loc) return null;
-                return {
-                  id: loc.id,
-                  name: loc.name,
-                  coordinates: { lat: 26.8431 + loc.coordinates.x * 0.0001, lng: 75.5647 + loc.coordinates.y * 0.0001 },
-                  category: loc.category,
-                  status: loc.status
-                };
-              })()}
-            />
-          </div>
-        </div>
+        {/* Mobile time calculator removed as routing handled by OSRM externally */}
       </main>
 
       {/* Mobile Location Info */}
