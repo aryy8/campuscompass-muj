@@ -36,7 +36,6 @@ const Index = () => {
   const [buildingCount, setBuildingCount] = useState(0);
   const [hostelCount, setHostelCount] = useState(0);
   const campusViewRef = useRef<HTMLDivElement>(null);
-  const [show360, setShow360] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedGooglePlace, setSelectedGooglePlace] = useState<{
     placeId: string;
@@ -80,25 +79,6 @@ const Index = () => {
       animateCounter(setBuildingCount, 50, 2000);
       animateCounter(setHostelCount, 15, 1500);
     }, 1000);
-  }, []);
-
-  // Lazy-mount the 360 Street View section when scrolled near viewport
-  useEffect(() => {
-    if (!campusViewRef.current) return;
-    const el = campusViewRef.current;
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            setShow360(true);
-            io.unobserve(el);
-          }
-        });
-      },
-      { root: null, rootMargin: '200px', threshold: 0.15 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
   }, []);
 
   const handleExploreClick = () => {
@@ -277,10 +257,9 @@ const Index = () => {
           Street View with level switching is live on the home page 360 section; ready for your level coordinates to refine.
         </p>
         <div className="w-full max-w-4xl">
-          {show360 && (
-            <StreetViewLevels
-              height={420}
-              levels={[
+          <StreetViewLevels
+            height={420}
+            levels={[
               // Tip: Click each level; the resolved pano ID is shown below the viewer. Share those to lock in exact panoIds.
               { id: 'L1', label: 'Dome', position: { lat: 26.844071, lng: 75.565228 }, embedSrc: 'https://www.google.com/maps/embed?pb=!4v1755535881817!6m8!1m7!1sCAoSFkNJSE0wb2dLRUlDQWdJQzhxNVhCYnc.!2m2!1d26.84407091446291!2d75.56522833275928!3f30.98!4f4.6299999999999955!5f0.5970117501821992' },
               { id: 'Library', label: 'Library', position: { lat: 26.8440607, lng: 75.5652878 }, embedSrc: 'https://www.google.com/maps/embed?pb=!4v1755534163449!6m8!1m7!1sCAoSFkNJSE0wb2dLRUlDQWdJQzhxNVhaTWc.!2m2!1d26.84406065003139!2d75.56528784853882!3f202.2794505640211!4f-3.185439736735333!5f0.7820865974627469' },
@@ -293,9 +272,8 @@ const Index = () => {
               { id: 'OldMess', label: 'Old mess', position: { lat: 26.844071, lng: 75.565228 }, embedSrc: 'https://www.google.com/maps/embed?pb=!4v1755535881817!6m8!1m7!1sCAoSFkNJSE0wb2dLRUlDQWdJQzhxNVhCYnc.!2m2!1d26.84407091446291!2d75.56522833275928!3f30.98!4f4.6299999999999955!5f0.5970117501821992' },
               { id: 'GameRoom', label: 'Game room', position: { lat: 26.84385521744164, lng: 75.56523428433832 }, embedSrc: 'https://www.google.com/maps/embed?pb=!4v1755536246831!6m8!1m7!1sCAoSFkNJSE0wb2dLRUlDQWdJQzhxOTM1S1E.!2m2!1d26.84385521744164!2d75.56523428433832!3f0.05917622296095715!4f-6.501571231872646!5f0.7820865974627469' },
             ]}
-              initialLevelId="L1"
-            />
-          )}
+            initialLevelId="L1"
+          />
         </div>
       </section>
 

@@ -24,14 +24,6 @@ const StreetViewLevels: React.FC<Props> = ({ levels, initialLevelId, height = '5
   const requestSeqRef = useRef(0); // used to ignore stale async responses
 
   useEffect(() => {
-    // If all levels use embedSrc (iframes), we don't need the Maps JS API at all
-    const anyApiLevels = levels.some(l => !l.embedSrc);
-    if (!anyApiLevels) {
-      // Mark as loaded so component logic relying on isLoaded won't block iframe rendering
-      setIsLoaded(false); // keep false; iframe path doesn't need API
-      return;
-    }
-
     const ensureGoogleMaps = () => {
       if ((window as any).google && (window as any).google.maps) {
         setIsLoaded(true);
@@ -58,7 +50,7 @@ const StreetViewLevels: React.FC<Props> = ({ levels, initialLevelId, height = '5
     };
 
     ensureGoogleMaps();
-  }, [levels]);
+  }, []);
 
   useEffect(() => {
     if (!isLoaded || !containerRef.current) return;
