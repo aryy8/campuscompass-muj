@@ -1,9 +1,8 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Bot, Send, ArrowLeft, Mic, Square } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { GoogleGenAI } from '@google/genai';
 
 const ChatbotPage: React.FC = () => {
   const navigate = useNavigate();
@@ -16,23 +15,6 @@ const ChatbotPage: React.FC = () => {
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const recognitionRef = useRef<any>(null);
-
-  // Resolve API key with multiple fallbacks to allow using GEMINI_API_KEY
-  const initialKey = (() => {
-    const envAny = (import.meta as any)?.env || {};
-    const fromVite = envAny.VITE_GEMINI_API_KEY as string | undefined;
-    const fromGemini = envAny.GEMINI_API_KEY as string | undefined; // usually undefined in Vite
-    const fromLS = typeof window !== 'undefined' ? (localStorage.getItem('GEMINI_API_KEY') || localStorage.getItem('VITE_GEMINI_API_KEY') || undefined) : undefined;
-    return fromVite || fromGemini || fromLS;
-  })();
-  const [apiKey, setApiKey] = useState<string | undefined>(initialKey);
-  const genAI = useMemo(() => (apiKey ? new GoogleGenAI({ apiKey }) : null), [apiKey]);
-  // Debug: check if key is present at runtime (will log true/false)
-  if (typeof window !== 'undefined') {
-    // Avoid logging the key itself; only presence
-    // This runs on each render; acceptable for quick debugging.
-    console.debug('VITE_GEMINI_API_KEY present:', Boolean(apiKey));
-  }
 
   // Setup Web Speech API
   useEffect(() => {
@@ -95,43 +77,25 @@ const ChatbotPage: React.FC = () => {
     try {
       setLoading(true);
       const systemPreamble = 'You are UniWay, a helpful assistant for Manipal University Jaipur. Keep answers concise.';
-      // 1) Try backend first
-      try {
-        const backendRes = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            systemPreamble,
-            model: 'gemini-2.5-flash',
-            messages: [
-              ...messages,
-              { role: 'user', text: userText },
-            ],
-          }),
-        });
-        if (backendRes.ok) {
-          const json = await backendRes.json();
-          const botText = json?.text || 'Sorry, I could not generate a response.';
-          setMessages((m) => [...m, { role: 'bot', text: botText }]);
-          return; // done via backend
-        }
-        // if backend returns error, fallthrough to client
-      } catch (_) {
-        // ignore and try client
-      }
-
-      // 2) Fallback to client-side call (requires key in env/localStorage)
-      if (!genAI) throw new Error('Client not initialized');
-      const response = await genAI.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: [
-          { role: 'user', parts: [{ text: systemPreamble }] },
-          ...messages.map((m) => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.text }] })),
-          { role: 'user', parts: [{ text: userText }] },
-        ],
+      // Call backend only
+      const backendRes = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemPreamble,
+          model: 'gemini-2.5-flash',
+          messages: [
+            ...messages,
+            { role: 'user', text: userText },
+          ],
+        }),
       });
-      const primaryText = (response as any)?.text ?? (response as any)?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text).filter(Boolean).join('\n');
-      const botText = (primaryText ?? 'Sorry, I could not generate a response.');
+      if (!backendRes.ok) {
+        const err = await backendRes.json().catch(() => ({}));
+        throw new Error(err?.error || 'Backend error');
+      }
+      const json = await backendRes.json();
+      const botText = json?.text || 'Sorry, I could not generate a response.';
       setMessages((m) => [...m, { role: 'bot', text: botText }]);
     } catch (e: any) {
       console.error(e);
@@ -182,29 +146,7 @@ const ChatbotPage: React.FC = () => {
             <div className="px-3 pb-3 text-[11px] text-muted-foreground">Voice input isn’t supported in this browser. Try Chrome on desktop or Android.</div>
           )}
         </div>
-        {!apiKey ? (
-          <div className="mt-3 flex gap-2 items-center">
-            <Input
-              placeholder="Paste GEMINI_API_KEY"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-            />
-            <Button
-              variant="secondary"
-              onClick={() => {
-                const k = text.trim();
-                if (!k) return;
-                try {
-                  localStorage.setItem('GEMINI_API_KEY', k);
-                  setApiKey(k);
-                  setText('');
-                } catch (_) {}
-              }}
-            >Save Key</Button>
-          </div>
-        ) : (
-          <p className="text-xs text-muted-foreground mt-2">Gemini connected.</p>
-        )}
+        {/* Backend-only: no API key input on client */}
       </div>
     </div>
   );

@@ -47,7 +47,6 @@ const LostAndFound: React.FC = () => {
                 <Input placeholder="Phone, email or Instagram" />
               </div>
               <Button className="w-full">Submit</Button>
-              <p className="text-xs text-muted-foreground">Dummy form — no backend yet.</p>
             </div>
           </div>
 

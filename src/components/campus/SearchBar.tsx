@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Search, MapPin, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { loadGoogleMapsWithPlaces } from '@/lib/google-maps-loader';
 
 interface SearchSuggestion {
   id: string;
@@ -15,6 +16,8 @@ interface SearchBarProps {
   onLocationSelect?: (suggestion: SearchSuggestion) => void;
   placeholder?: string;
   variant?: 'default' | 'hero';
+  onGooglePlaceSelect?: (place: { placeId: string; name: string; formatted_address?: string; location: { lat: number; lng: number } }) => void;
+  hideManualSuggestions?: boolean;
 }
 
 // Lazy-load labels on first use
@@ -37,13 +40,17 @@ const loadSuggestions = async (): Promise<SearchSuggestion[]> => {
 const SearchBar: React.FC<SearchBarProps> = ({ 
   onLocationSelect, 
   placeholder = "Search buildings, departments, or services...",
-  variant = 'default'
+  variant = 'default',
+  onGooglePlaceSelect,
+  hideManualSuggestions = false,
 }) => {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   // Removed recent searches: dropdown only opens on live matches
   const searchRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -60,9 +67,63 @@ const SearchBar: React.FC<SearchBarProps> = ({
     // No preload; dropdown is driven only by active query matches
   }, [query]);
 
+  // Initialize Google Places Autocomplete
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        await loadGoogleMapsWithPlaces();
+        if (cancelled) return;
+        if (!inputRef.current || autocompleteRef.current) return;
+        const g = (window as any).google;
+        if (!g?.maps?.places?.Autocomplete) return;
+        // Define MUJ center and bounds (~5km box for campus and nearby)
+        const mujCenter = { lat: 26.8431, lng: 75.5647 };
+        const d = 0.045; // ~5km in degrees
+        const bounds = new g.maps.LatLngBounds(
+          new g.maps.LatLng(mujCenter.lat - d, mujCenter.lng - d),
+          new g.maps.LatLng(mujCenter.lat + d, mujCenter.lng + d)
+        );
+
+        const ac = new g.maps.places.Autocomplete(inputRef.current as HTMLInputElement, {
+          fields: ['place_id', 'geometry', 'name', 'formatted_address'],
+          types: ['establishment'],
+          // Note: bounds is a bias unless strictBounds is true
+        });
+        ac.setBounds(bounds);
+        (ac as any).setOptions?.({ strictBounds: true });
+        autocompleteRef.current = ac;
+        ac.addListener('place_changed', () => {
+          const place = ac.getPlace();
+          const loc = place?.geometry?.location;
+          if (!place || !loc) return;
+          // Prefer emitting Google place if callback provided
+          if (onGooglePlaceSelect && place.place_id) {
+            onGooglePlaceSelect({
+              placeId: place.place_id,
+              name: place.name || '',
+              formatted_address: place.formatted_address,
+              location: { lat: loc.lat(), lng: loc.lng() },
+            });
+            setShowSuggestions(false);
+          }
+        });
+      } catch (e) {
+        // fail silently, fallback to local suggestions
+        // console.warn('Autocomplete init failed', e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [onGooglePlaceSelect]);
+
   const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setQuery(value);
+    if (hideManualSuggestions) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
 
     const all = await loadSuggestions();
 
@@ -116,6 +177,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           autoCorrect="off"
           spellCheck={false}
           inputMode="search"
+          ref={inputRef}
           className={`pl-12 pr-4 py-3 w-full rounded-xl border-2 transition-all duration-200 focus:border-primary ${
             variant === 'hero' 
               ? 'h-14 text-lg shadow-medium text-black placeholder:text-gray-500 bg-white'
@@ -124,7 +186,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         />
       </div>
 
-      {showSuggestions && suggestions.length > 0 && (
+      {!hideManualSuggestions && showSuggestions && suggestions.length > 0 && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-xl shadow-strong z-50 max-h-96 overflow-y-auto">
           {query && suggestions.length > 0 && (
             <div className="p-2">

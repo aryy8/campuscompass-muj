@@ -13,6 +13,7 @@ declare global {
 interface GoogleMapsCampusProps {
   onLocationSelect?: (location: CampusLocation) => void;
   selectedLocation?: string;
+  selectedGooglePlace?: { placeId: string; name: string; formatted_address?: string; location: { lat: number; lng: number } };
 }
 
 interface CampusLocation {
@@ -391,12 +392,14 @@ const categoryColors = {
 
 const GoogleMapsCampus: React.FC<GoogleMapsCampusProps> = ({
   onLocationSelect,
-  selectedLocation
+  selectedLocation,
+  selectedGooglePlace,
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
+  const googlePlaceMarkerRef = useRef<google.maps.Marker | null>(null);
   const placesServiceRef = useRef<any>(null);
   const streetViewServiceRef = useRef<any>(null);
   const streetViewPanoramaRef = useRef<any>(null);
@@ -405,6 +408,7 @@ const GoogleMapsCampus: React.FC<GoogleMapsCampusProps> = ({
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [currentMapType, setCurrentMapType] = useState<google.maps.MapTypeId>(google.maps.MapTypeId.SATELLITE);
   const [placeDetailsCache, setPlaceDetailsCache] = useState<Record<string, any>>({});
+  const [googlePlaceDetailsCache, setGooglePlaceDetailsCache] = useState<Record<string, any>>({});
   const [streetViewVisible, setStreetViewVisible] = useState(false);
   const [streetViewAvailable, setStreetViewAvailable] = useState(false);
 
@@ -553,6 +557,150 @@ const GoogleMapsCampus: React.FC<GoogleMapsCampusProps> = ({
       mapInstance.current.setZoom(18);
     }
   }, [selectedLocation]);
+
+  // When a Google Place is selected via Autocomplete
+  useEffect(() => {
+    if (!mapInstance.current) return;
+    if (!selectedGooglePlace) return;
+
+    const { location, name, formatted_address } = selectedGooglePlace;
+    // Center map
+    mapInstance.current.panTo(location);
+    mapInstance.current.setZoom(18);
+
+    // Create or update a dedicated marker for Google Place
+    if (!googlePlaceMarkerRef.current) {
+      googlePlaceMarkerRef.current = new window.google.maps.Marker({
+        position: location,
+        map: mapInstance.current,
+        title: name,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 9,
+          fillColor: '#2563eb',
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 2,
+        },
+        label: { text: name?.split(' ')?.[0] ?? 'Place', color: '#ffffff', fontSize: '10px', fontWeight: 'bold' }
+      });
+    } else {
+      googlePlaceMarkerRef.current.setMap(mapInstance.current);
+      (googlePlaceMarkerRef.current as any).setPosition(location);
+      (googlePlaceMarkerRef.current as any).setTitle(name);
+    }
+
+    // Show info window
+    if (infoWindowRef.current && googlePlaceMarkerRef.current) {
+      const content = `
+        <div class="p-2">
+          <h3 class="font-semibold text-lg">${name}</h3>
+          ${formatted_address ? `<p class="text-sm text-gray-600">${formatted_address}</p>` : ''}
+        </div>
+      `;
+      infoWindowRef.current.setContent(content);
+      infoWindowRef.current.open(mapInstance.current, googlePlaceMarkerRef.current);
+    }
+  }, [selectedGooglePlace]);
+
+  // Fetch rich details for selected Google Place using Places API v1
+  useEffect(() => {
+    const fetchJsOrHttpDetails = async () => {
+      if (!selectedGooglePlace) return;
+      const pid = selectedGooglePlace.placeId;
+      if (!pid) return;
+      if (googlePlaceDetailsCache[pid]) return;
+
+      const g: any = window.google;
+      // Prefer JS PlacesService if available
+      if (placesServiceRef.current && g?.maps?.places) {
+        try {
+          await new Promise<void>((resolve) => {
+            const service: any = placesServiceRef.current;
+            service.getDetails(
+              {
+                placeId: pid,
+                fields: ['place_id','name','rating','user_ratings_total','formatted_address','url','photos']
+              },
+              (result: any, status: any) => {
+                if (status === g.maps.places.PlacesServiceStatus.OK && result) {
+                  const photoUrl = result.photos?.[0]?.getUrl?.({ maxWidth: 520, maxHeight: 260 }) ?? null;
+                  const normalized = {
+                    name: result.name ?? selectedGooglePlace.name,
+                    formatted_address: result.formatted_address,
+                    rating: result.rating,
+                    user_ratings_total: result.user_ratings_total,
+                    url: result.url,
+                    photos: result.photos,
+                    __photoUrl: photoUrl,
+                    __raw: result,
+                  } as any;
+                  setGooglePlaceDetailsCache(prev => ({ ...prev, [pid]: normalized }));
+                } else {
+                  console.warn('PlacesService.getDetails non-OK status', { status, pid });
+                }
+                resolve();
+              }
+            );
+          });
+          return; // JS path handled
+        } catch (e) {
+          console.warn('JS PlacesService.getDetails failed, falling back to v1', e);
+        }
+      }
+
+      // Fallback: Places API v1 HTTP (use lookupPlaceId to convert legacy place_id to v1 resource name)
+      const apiKey = (import.meta as any)?.env?.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
+      if (!apiKey) return;
+      try {
+        // Step 1: Lookup v1 resource name from legacy place_id
+        const lookupUrl = new URL('https://places.googleapis.com/v1/places:lookupPlaceId');
+        lookupUrl.searchParams.set('placeId', pid);
+        lookupUrl.searchParams.set('key', apiKey);
+        const lookupResp = await fetch(lookupUrl.toString());
+        if (!lookupResp.ok) throw new Error(`lookupPlaceId failed: ${lookupResp.status}`);
+        const lookupData = await lookupResp.json();
+        const resourceName: string | undefined = lookupData?.name; // e.g., "places/XXXX"
+        if (!resourceName) throw new Error('lookupPlaceId returned no resource name');
+
+        // Step 2: Fetch details for the v1 resource name
+        const fields = [
+          'id','displayName','formattedAddress','rating','userRatingCount','location','photos','googleMapsUri','editorialSummary'
+        ].join(',');
+        const detailsUrl = new URL(`https://places.googleapis.com/v1/${resourceName}`);
+        detailsUrl.searchParams.set('fields', fields);
+        detailsUrl.searchParams.set('key', apiKey);
+        const resp = await fetch(detailsUrl.toString());
+        if (!resp.ok) throw new Error(`Places details failed: ${resp.status}`);
+        const place = await resp.json();
+
+        let photoUrl: string | null = null;
+        const photoName = place?.photos?.[0]?.name;
+        if (photoName) {
+          const u = new URL(`https://places.googleapis.com/v1/${photoName}/media`);
+          u.searchParams.set('maxWidthPx', '520');
+          u.searchParams.set('maxHeightPx', '260');
+          u.searchParams.set('key', apiKey);
+          photoUrl = u.toString();
+        }
+        const normalized = {
+          name: place?.displayName?.text ?? selectedGooglePlace.name,
+          formatted_address: place?.formattedAddress,
+          rating: place?.rating,
+          user_ratings_total: place?.userRatingCount,
+          googleMapsUri: place?.googleMapsUri,
+          editorialSummary: place?.editorialSummary?.text,
+          __photoUrl: photoUrl,
+          __raw: place,
+        } as any;
+        setGooglePlaceDetailsCache(prev => ({ ...prev, [pid]: normalized }));
+      } catch (e) {
+        console.warn('Places API v1 fallback failed', e);
+      }
+    };
+
+    fetchJsOrHttpDetails();
+  }, [selectedGooglePlace, googlePlaceDetailsCache]);
 
   // Fetch Google Places details for selected location using Places API (New)
   useEffect(() => {
@@ -719,7 +867,7 @@ const GoogleMapsCampus: React.FC<GoogleMapsCampusProps> = ({
         </div>
       </div>
 
-      {/* Place Details Panel (search-focused) */}
+      {/* Place Details Panel for campus locations */}
       {selectedLocation && (
         <div className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg p-4 shadow-lg max-w-sm">
           {(() => {
@@ -758,7 +906,7 @@ const GoogleMapsCampus: React.FC<GoogleMapsCampusProps> = ({
                     'bg-red-100 text-red-800'
                   }`}>{loc.status}</span>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="grid grid-cols-1 gap-2 text-sm">
                   <Button variant="secondary" size="sm" onClick={() => {
                     // Center and drop bounce to highlight
                     if (mapInstance.current) {
@@ -766,13 +914,60 @@ const GoogleMapsCampus: React.FC<GoogleMapsCampusProps> = ({
                       mapInstance.current.setZoom(18);
                     }
                   }}>Center here</Button>
-                  <Button variant="outline" size="sm" onClick={() => {
-                    navigator.clipboard.writeText(`${loc.coordinates.lat}, ${loc.coordinates.lng}`);
-                  }}>Copy coords</Button>
                 </div>
                 {details?.url && (
                   <div className="mt-2">
                     <a href={details.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">
+                      View on Google Maps
+                    </a>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Place Details Panel for Google Autocomplete selection */}
+      {selectedGooglePlace && (
+        <div className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg p-4 shadow-lg max-w-sm">
+          {(() => {
+            const d = googlePlaceDetailsCache[selectedGooglePlace.placeId];
+            const photoUrl = d?.__photoUrl || (d?.photos?.[0]?.getUrl ? d.photos[0].getUrl({ maxWidth: 400, maxHeight: 200 }) : null);
+            return (
+              <div>
+                {photoUrl && (
+                  <div className="mb-3 overflow-hidden rounded-md">
+                    <img src={photoUrl} alt={selectedGooglePlace.name} className="w-full h-32 object-cover" />
+                  </div>
+                )}
+                <div className="mb-2">
+                  <h4 className="font-semibold text-lg">{d?.name ?? selectedGooglePlace.name}</h4>
+                  {d?.formatted_address && (
+                    <div className="text-xs text-muted-foreground">{d.formatted_address}</div>
+                  )}
+                </div>
+                {typeof d?.rating === 'number' && (
+                  <div className="flex items-center gap-2 text-sm mb-2">
+                    <span className="font-medium">{d.rating.toFixed(1)}</span>
+                    <span className="text-yellow-500">{'★'.repeat(Math.round(d.rating))}</span>
+                    <span className="text-xs text-muted-foreground">({d.user_ratings_total ?? 0})</span>
+                  </div>
+                )}
+                {d?.editorialSummary && (
+                  <p className="text-sm text-gray-700 mb-3">{d.editorialSummary}</p>
+                )}
+                <div className="grid grid-cols-1 gap-2 text-sm">
+                  <Button variant="secondary" size="sm" onClick={() => {
+                    if (mapInstance.current) {
+                      mapInstance.current.panTo(selectedGooglePlace.location);
+                      mapInstance.current.setZoom(18);
+                    }
+                  }}>Center here</Button>
+                </div>
+                {(d?.url || d?.googleMapsUri) && (
+                  <div className="mt-2">
+                    <a href={d.url || d.googleMapsUri} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">
                       View on Google Maps
                     </a>
                   </div>

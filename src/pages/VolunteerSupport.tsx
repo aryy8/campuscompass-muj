@@ -40,7 +40,6 @@ const VolunteerSupport: React.FC = () => {
         </div>
 
         <Button className="w-full">Request Support</Button>
-        <p className="text-xs text-muted-foreground mt-2">This is a placeholder page.</p>
       </div>
     </div>
   );

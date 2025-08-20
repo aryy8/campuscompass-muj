@@ -203,6 +203,32 @@ declare namespace google.maps {
   }
 }
 
+// Minimal Places namespace additions for Autocomplete usage
+declare namespace google.maps.places {
+  interface PlaceGeometry {
+    location: google.maps.LatLng;
+  }
+
+  interface PlaceResult {
+    place_id?: string;
+    name?: string;
+    formatted_address?: string;
+    geometry?: PlaceGeometry;
+  }
+
+  interface AutocompleteOptions {
+    fields?: Array<'place_id' | 'geometry' | 'name' | 'formatted_address'>;
+    types?: string[];
+    // Add more options as needed
+  }
+
+  class Autocomplete {
+    constructor(inputField: HTMLInputElement, opts?: AutocompleteOptions);
+    getPlace(): PlaceResult;
+    addListener(eventName: string, handler: Function): google.maps.MapsEventListener;
+  }
+}
+
 declare global {
   interface Window {
     google: typeof google;

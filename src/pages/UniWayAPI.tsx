@@ -25,11 +25,21 @@ const UniWayAPI: React.FC = () => {
     <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto p-4 py-6">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-4">
-          <Button variant="ghost" onClick={() => navigate(-1)}>← Back</Button>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Globe2 className="w-6 h-6" /> UniWay API
-          </h1>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" onClick={() => navigate(-1)}>← Back</Button>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Globe2 className="w-6 h-6" /> UniWay API
+            </h1>
+          </div>
+          <div>
+            <a
+              href="mailto:developer@uniway.app?subject=UniWay%20API%20Inquiry&body=Hi%20UniWay%20Team%2C%0D%0A%0D%0AI%27d%20like%20to%20learn%20more%20about%20the%20UniWay%20API.%20Please%20get%20in%20touch.%0D%0A%0D%0AThanks%2C%0D%0A"
+              className="inline-flex"
+            >
+              <Button size="sm" variant="secondary">Contact Developer</Button>
+            </a>
+          </div>
         </div>
         <p className="text-sm text-muted-foreground mb-8">Enable other colleges to create their own campus navigation system with UniWay’s flexible API.</p>
 

@@ -11,6 +11,7 @@ import Footer from '@/components/Footer';
 const Campus: React.FC = () => {
   const navigate = useNavigate();
   const [selectedLocation, setSelectedLocation] = useState<string>('');
+  const [selectedGooglePlace, setSelectedGooglePlace] = useState<{ placeId: string; name: string; formatted_address?: string; location: { lat: number; lng: number } } | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   // Routing removed; page is now search-focused
@@ -48,6 +49,15 @@ const Campus: React.FC = () => {
     if (initial) setSelectedLocation(initial);
   }, [location.state]);
 
+  // Initialize selected Google Place from navigation state (home Explore with Google place)
+  useEffect(() => {
+    const gp = (location.state as any)?.selectedGooglePlace;
+    if (gp) {
+      setSelectedGooglePlace(gp);
+      setSelectedLocation('');
+    }
+  }, [location.state]);
+
   const handleCategorySelect = (category: Category) => {
     setSelectedCategories(prev => {
       const isSelected = prev.includes(category.id);
@@ -66,6 +76,12 @@ const Campus: React.FC = () => {
   const handleSearchSelect = (suggestion: any) => {
     // In a real app, this would find the corresponding location on the map
     setSelectedLocation(suggestion.id);
+    setSelectedGooglePlace(null);
+  };
+
+  const handleGooglePlaceSelect = (place: { placeId: string; name: string; formatted_address?: string; location: { lat: number; lng: number } }) => {
+    setSelectedGooglePlace(place);
+    setSelectedLocation('');
   };
 
   const clearFilters = () => {
@@ -90,6 +106,7 @@ const Campus: React.FC = () => {
             <div className="flex-1 max-w-2xl">
               <SearchBar 
                 onLocationSelect={handleSearchSelect}
+                onGooglePlaceSelect={handleGooglePlaceSelect}
                 placeholder="Search campus locations..."
               />
             </div>
@@ -154,6 +171,7 @@ const Campus: React.FC = () => {
                 <GoogleMapsCampus
                   selectedLocation={selectedLocation}
                   onLocationSelect={handleLocationSelect}
+                  selectedGooglePlace={selectedGooglePlace || undefined}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-muted rounded-xl">
