@@ -1,154 +1,139 @@
-#  UniWay – MUJ Campus Navigation Web App
+# UniWay – MUJ Campus Navigation (Project README)
 
-##  Overview
-**UniWay** is a responsive, student-centric campus navigation platform for **Manipal University Jaipur (MUJ)**.  
-It helps students, parents, and visitors easily find locations, plan routes, explore events, and access essential campus services — all in one place.
-
----
-
-## Features
-
-### 🏠 Landing Page
-- Clean, minimal design with UniWay logo.
-- Prominent search bar front and center.
-- "Explore Campus" button to open the interactive map.
-- Quick category shortcuts: Academic, Dining, Hostels, Recreation, Admin, Medical.
-
-### 🗺 Interactive Campus Map
-- Zoomable, pannable MUJ campus map with building outlines.
-- Clickable markers showing facility details.
-- Custom icons for different facility types.
-- Satellite & blueprint-style map toggle.
-
-### 🔍 Smart Search Bar
-- Autocomplete for buildings, departments, events, and services.
-- Supports abbreviations/nicknames (e.g., “AB1” → “Academic Block 1”).
-- Click to highlight location on map.
-
-### 🚶 Route Planning
-- Turn-by-turn walking directions with step markers.
-- Distance & estimated time display.
-- Multi-stop route planning.
-- Start from GPS location or any selected point.
-
-### 🗂 Location Categories
-- Filters: Academic, Hostels, Dining, Recreation, Admin, Medical, Events.
-- Multi-category selection.
-
-### 📢 Real-time Facility Info
-- Open/close status & operational hours.
-- Maintenance alerts.
-- Optional live crowd density indicators.
-
-### 🎉 Event & Announcement Layer
-- Upcoming events pinned on the map.
-- Clickable details with description, time, and location.
-- **Fest Mode** for highlighting stalls and venues during events.
-
-### 🎓 Student Services
-- Lost & Found form with map pin + photo.
-- Emergency contacts with quick dial.
-- Routes to Medical Center or Security Office.
-
-### 💡 UX Add-ons
-- **First Year Friendly** onboarding for freshers.
-- Favorites list for quick location access.
-- Accessible route highlighting.
-- Dark mode toggle.
-- QR Code scanning for building-specific floor plans.
+## Overview
+UniWay is a Vite + React + TypeScript web app for navigating Manipal University Jaipur (MUJ). It provides a campus map, smart search via Google Places Autocomplete, helpful pages (contacts, lost & found, volunteers), Street View exploration, and an AI chatbot.
 
 ---
 
-## 🚀 Future Scope
-
-### 🚌 Campus Transport & Commute
-- **Carpooling & Ride Sharing** – Connect students for eco-friendly travel.
-- Shuttle tracking and schedule integration.
-
-### 🧭 Student Guidance & Social
-- **Student Guides** – Volunteer helpers for freshers.
-- Clubs & forums for student interaction.
-- Sports team finder (e.g., for GHS teams).
-
-### 🍽 Food & Lifestyle
-- Mess comparison dashboard.
-- Food reviews & ratings.
-- Highlighted delivery pickup points.
-
-### 🏫 Academic & Campus Utility
-- Class timetable upload for route planning.
-- Salon, park, courts, and other amenity labels.
-- Outhouse events guide.
-
-### 🔍 Lost & Found 2.0
-- AI-powered image match for lost items.
-- Location-based lost item alerts.
+## Features (Implemented)
+- Hero search with Google Places Autocomplete on the home page (`src/pages/Index.tsx`, `src/components/campus/SearchBar.tsx`).
+- Interactive Google Map with campus POIs and details panel (`src/components/campus/GoogleMapsCampus.tsx`, `src/pages/Campus.tsx`).
+- Street View explorer for preset locations (`src/components/campus/StreetViewLevels.tsx`).
+- Category shortcuts on the home page for quick discovery.
+- Lost & Found form and recent items (`src/pages/LostAndFound.tsx`).
+- Volunteer Support info (`src/pages/VolunteerSupport.tsx`).
+- Contacts and Emergency contacts pages (`src/pages/Contacts.tsx`, `src/pages/ContactsEmergency.tsx`).
+- Crowd Heat Map demo (`src/pages/CrowdHeatMaps.tsx`).
+- AI Chatbot using Gemini with server proxy fallback (`src/pages/Chatbot.tsx`, `server/index.js`).
+- 404 page (`src/pages/NotFound.tsx`).
 
 ---
 
-## 🛠 Tech Stack
-- **Frontend:** React / Next.js
-- **Styling:** Tailwind CSS
-- **Maps:** Leaflet.js, Mapbox, or Google Maps API
-- **Routing API:** OSRM, Mapbox Directions, or Google Directions API
-- **Responsive Design:** Desktop & mobile optimized
-- **Animations:** Smooth transitions for filters, search results, and route drawing
+## Pages
+Located in `src/pages/`:
+- `Index.tsx` – Landing page (hero, search, explore button, categories)
+- `Campus.tsx` – Main campus exploration page (Google Map)
+- `Directions.tsx` – Directions helper
+- `CrowdHeatMaps.tsx` – Crowd heat map demo
+- `LostAndFound.tsx` – Lost and found
+- `VolunteerSupport.tsx` – Student volunteer help
+- `Contacts.tsx` – Key contacts
+- `ContactsEmergency.tsx` – Emergency services
+- `UniWayAPI.tsx` – UniWay API info (with contact link)
+- `Chatbot.tsx` – AI chatbot (Gemini)
+- `EmergencyServices.tsx` – Emergency services (alternate)
+- `NotFound.tsx` – 404
 
 ---
-## 🏗️ Project Structure
 
+## Tech Stack
+- Framework: Vite + React + TypeScript
+- UI/Styling: Tailwind CSS, shadcn/ui (Radix UI)
+- Maps: Google Maps JavaScript API with Places + Street View
+- Optional mapping libs present: Leaflet (+ React Leaflet) and Leaflet Routing Machine (used in demos)
+- AI: Google Gemini via `@google/genai`
+- Backend: Node.js + Express (simple proxy for Gemini)
+
+---
+
+## APIs Used
+- Google Maps JavaScript API
+  - Base map and Street View (`StreetViewService`, `StreetViewPanorama`)
+- Google Places API (Web)
+  - Autocomplete in `SearchBar.tsx` via `google.maps.places.Autocomplete`
+- Google Gemini (Generative AI)
+  - Client SDK: `@google/genai`
+  - Backend proxy: `POST /api/chat` in `server/index.js`
+
+Supporting utilities:
+- `src/lib/google-maps-loader.ts` – single script loader for Maps JS with Places
+- `src/lib/campus-data.ts` – campus locations
+- `src/lib/campus-graph.ts` – graph helpers
+
+---
+
+## Environment Variables
+Create `.env` in the project root (see `env.example`):
 ```
-src/
-├── components/
-│   └── campus/
-│       ├── GoogleMapsCampus.tsx    # Main Google Maps component
-│       ├── SearchBar.tsx           # Location search functionality
-│       └── CategoryGrid.tsx        # Category filtering
-├── pages/
-│   ├── Campus.tsx                  # Main campus exploration page
-│   └── Index.tsx                   # Landing page
-├── lib/
-│   ├── campus-data.ts              # Campus location data
-│   └── shortest-path.ts            # (Legacy) Pathfinding
-├── types/
-│   └── google-maps.d.ts            # Google Maps TypeScript definitions
-└── assets/                         # Images and static assets
+VITE_GOOGLE_MAPS_API_KEY=YOUR_ACTUAL_API_KEY
+VITE_GEMINI_API_KEY=YOUR_GEMINI_KEY   # optional client fallback
+GEMINI_API_KEY=YOUR_GEMINI_KEY        # used by Express backend
 ```
 
----
 
-## 🛠️ Setup & Installation
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/yourusername/campuscompass-muj.git
-cd campuscompass-muj
-```
-
-### 2. Install Dependencies
+## Installation & Scripts
+Install dependencies:
 ```bash
 npm install
 ```
 
-### 3. Google Maps API Key
-- Obtain a Google Maps JavaScript API key ([instructions](GOOGLE_MAPS_SETUP.md)).
-- Create a `.env` file in the project root and add:
-  ```bash
-  VITE_GOOGLE_MAPS_API_KEY=YOUR_ACTUAL_API_KEY
-  ```
-  Vite automatically exposes variables prefixed with `VITE_` to the client. The app reads this value via `import.meta.env.VITE_GOOGLE_MAPS_API_KEY`.
-
-### 4. Start the Development Server
+Start Vite dev server (http://localhost:5173):
 ```bash
 npm run dev
 ```
-Visit [http://localhost:5173](http://localhost:5173) in your browser.
 
-## 🎯 Goal
-To make campus navigation seamless, engaging, and student-focused —  
-improving accessibility, safety, and convenience at MUJ.
+Start backend only (http://localhost:3001):
+```bash
+npm run server
+```
 
----
+Run both (backend + frontend) concurrently:
+```bash
+npm run dev:full
+```
+
+Build and preview:
+```bash
+npm run build
+npm run preview   
+```
+ 
+## Implementation Roadmap (Full-Scale Development)
+
+- **Foundations**
+  - Finalize data model for campus POIs, categories, hours, accessibility, contacts.
+  - Centralize config/env management; production API key restrictions and secrets storage.
+
+- **Maps & Navigation**
+  - Campus boundary, custom marker set, and clustering for dense POIs.
+  - Directions: on-campus pedestrian routing + time/distance display.
+  - Street View deep links from POIs; level presets for key buildings.
+
+- **Data & Content**
+  - Admin JSON/CSV import for POIs and events; validation pipeline.
+  - Lost & Found persistence (lightweight DB) and moderation flow.
+  - Contacts/Emergency directory with versioning and role-based updates.
+
+- **AI & Backend**
+  - Robust `/api/chat` with safety, rate limiting, logging; streaming responses.
+  - Context grounding from campus data for location-aware answers.
+  - Optional semantic search over FAQs and guides.
+
+- **Mobile & UX**
+  - PWA (installable, offline shell for static pages and cached tiles).
+  - Accessibility pass (keyboard nav, ARIA, color contrast, reduced motion).
+  - Onboarding for first-year students; saved favorites and recent searches.
+
+- **Performance & Quality**
+  - Code splitting and lazy-loading heavy map modules.
+  - E2E smoke tests for main flows; visual snapshot tests for map UI.
+  - Error boundary and telemetry (basic client metrics + backend health).
+
+- **Deployment & Ops**
+  - CI for lint/build/test; preview deployments per PR.
+  - Staging + production environments; uptime/health alerts.
+  - Rollback strategy and change log.
 
 
-**Find your way — the UniWay way.**
+## License
+For educational/demo use at MUJ. Follow Google Maps/Places and Gemini terms for production use.
